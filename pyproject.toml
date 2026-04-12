@@ -1,0 +1,12 @@
+[project]
+name = "rescue-stations-placement"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "osmnx>=2.1.0",
+    "pydeck>=0.9.1",
+    "shapely>=2.1.2",
+    "streamlit>=1.56.0",
+]
