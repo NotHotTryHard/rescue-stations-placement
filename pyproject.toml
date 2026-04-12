@@ -5,8 +5,10 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
+    "numpy>=2.0",
     "osmnx>=2.1.0",
     "pydeck>=0.9.1",
+    "scipy>=1.14",
     "shapely>=2.1.2",
     "streamlit>=1.56.0",
 ]
