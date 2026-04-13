@@ -6,23 +6,25 @@ import numpy as np
 
 from src.data import load_stations_raw, load_passages
 from src.session import sidebar_controls, get_results
+from src.coverage import blind_spots
 
 st.set_page_config(page_title="Достижимость", layout="wide")
 st.title("Карта достижимости")
 
 cell_size = sidebar_controls()
 max_time_display = st.sidebar.slider("Макс. время на шкале (мин)", 5, 60, 25, 5)
+show_blind_spots = st.sidebar.checkbox("Показывать слепые пятна", value=False)
+blind_threshold = st.sidebar.slider("Порог слепых пятен (мин)", 5, 40, 20, 1)
 
 lats, lons, _, min_times, _ = get_results()
 
 # --- Statistics ---
 reachable = min_times[np.isfinite(min_times)]
 
-col1, col2, col3, col4 = st.columns(4)
+col1, col2, col3 = st.columns(3)
 col1.metric("Ячеек", f"{len(lats):,}")
-col2.metric("Достижимых", f"{len(reachable):,}")
-col3.metric("Среднее", f"{reachable.mean():.1f} мин" if len(reachable) else "—")
-col4.metric("Максимум", f"{reachable.max():.1f} мин" if len(reachable) else "—")
+col2.metric("Среднее", f"{reachable.mean():.1f} мин" if len(reachable) else "—")
+col3.metric("Максимум", f"{reachable.max():.1f} мин" if len(reachable) else "—")
 
 
 # --- Heatmap ---
@@ -46,6 +48,8 @@ grid_data = [
     }
     for i in range(len(lats))
 ]
+spots = blind_spots(min_times, threshold_min=blind_threshold)
+spot_data = [{"lat": float(lats[i]), "lon": float(lons[i]), "color": [255, 0, 0, 200]} for i in spots]
 
 stations_raw = load_stations_raw()
 station_charset = '"' + "".join(sorted({ch for s in stations_raw for ch in s["name"]})) + '"'
@@ -54,11 +58,32 @@ passages_data = [{"name": v["name"], "lat": v["lat"], "lon": v["lon"]} for v in 
 
 view = pdk.ViewState(latitude=60.00, longitude=29.85, zoom=10, pitch=0)
 
+main_layer = (
+    pdk.Layer(
+        "ScatterplotLayer",
+        data=spot_data,
+        get_position="[lon, lat]",
+        get_color="color",
+        get_radius=cell_size * 0.6,
+        pickable=True,
+    )
+    if show_blind_spots
+    else pdk.Layer(
+        "ScatterplotLayer",
+        data=grid_data,
+        get_position="[lon, lat]",
+        get_color="color",
+        get_radius=cell_size * 0.6,
+        pickable=True,
+    )
+)
+
+tooltip_text = "{name}" if show_blind_spots else "{name}\nВремя: {time_min} мин"
+
 st.pydeck_chart(
     pdk.Deck(
         layers=[
-            pdk.Layer("ScatterplotLayer", data=grid_data, get_position="[lon, lat]",
-                      get_color="color", get_radius=cell_size * 0.6, pickable=True),
+            main_layer,
             pdk.Layer("ScatterplotLayer", data=passages_data, get_position="[lon, lat]",
                       get_color=[255, 60, 0, 220], get_radius=150, pickable=True),
             pdk.Layer("ScatterplotLayer", data=stations_raw, get_position="[lon, lat]",
@@ -69,13 +94,21 @@ st.pydeck_chart(
                       get_anchor="start", get_pixel_offset="[36, 0]")
         ],
         initial_view_state=view,
-        tooltip={"text": "{name}\nВремя: {time_min} мин"},
+        tooltip={"text": tooltip_text},
         map_style="light",
     ),
     height=800,
 )
 
-st.markdown(
-    f"**Шкала:** :green[зелёный] (< {max_time_display // 3} мин) → "
-    f":orange[жёлтый] → :red[красный] (> {2 * max_time_display // 3} мин) → серый (недостижимо)"
-)
+if show_blind_spots:
+    if len(spots) == 0:
+        st.success(f"Вся акватория достижима за {blind_threshold} мин!")
+    else:
+        st.warning(
+            f"{len(spots):,} ячеек ({len(spots) / len(lats) * 100:.1f}%) с временем >{blind_threshold} мин"
+        )
+else:
+    st.markdown(
+        f"**Шкала:** :green[зелёный] (< {max_time_display // 3} мин) → "
+        f":orange[жёлтый] → :red[красный] (> {2 * max_time_display // 3} мин) → серый (недостижимо)"
+    )
