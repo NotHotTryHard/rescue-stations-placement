@@ -20,14 +20,14 @@ class Station:
 
 
 def load_stations() -> list[Station]:
-    with open(DATA_DIR / "stations.json") as f:
+    with open(DATA_DIR / "stations.json", encoding="utf-8") as f:
         raw = json.load(f)
     return [Station(**s) for s in raw]
 
 
 def load_stations_raw() -> list[dict]:
     """Raw dicts for pydeck layers."""
-    with open(DATA_DIR / "stations.json") as f:
+    with open(DATA_DIR / "stations.json", encoding="utf-8") as f:
         return json.load(f)
 
 

@@ -16,6 +16,7 @@ blind_threshold = st.sidebar.slider("Порог слепых пятен (мин)
 
 lats, lons, travel, min_times, stations = get_results()
 stations_raw = load_stations_raw()
+station_charset = '"' + "".join(sorted({ch for s in stations_raw for ch in s["name"]})) + '"'
 view = pdk.ViewState(latitude=60.00, longitude=29.85, zoom=10, pitch=0)
 
 # --- 1. Coverage curve ---
@@ -58,8 +59,9 @@ st.pydeck_chart(
             pdk.Layer("ScatterplotLayer", data=stations_raw, get_position="[lon, lat]",
                       get_color=[0, 0, 0, 255], get_radius=250, pickable=True),
             pdk.Layer("TextLayer", data=stations_raw, get_position="[lon, lat]",
-                      get_text="name", get_size=14, get_color=[0, 0, 0, 255],
-                      get_anchor="start", get_pixel_offset="[15, 0]"),
+                      get_text="name", character_set=station_charset, get_size=14, get_color=[0, 0, 0, 255],
+                      font_family='"Arial, sans-serif"',
+                      get_anchor="start", get_pixel_offset="[36, 0]"),
         ],
         initial_view_state=view,
         tooltip={"text": "Станция: {name}"},
@@ -91,8 +93,9 @@ else:
                 pdk.Layer("ScatterplotLayer", data=stations_raw, get_position="[lon, lat]",
                           get_color=[0, 0, 0, 255], get_radius=250, pickable=True),
                 pdk.Layer("TextLayer", data=stations_raw, get_position="[lon, lat]",
-                          get_text="name", get_size=14, get_color=[0, 0, 0, 255],
-                          get_anchor="start", get_pixel_offset="[15, 0]"),
+                          get_text="name", character_set=station_charset, get_size=14, get_color=[0, 0, 0, 255],
+                          font_family='"Arial, sans-serif"',
+                          get_anchor="start", get_pixel_offset="[36, 0]"),
             ],
             initial_view_state=view,
             tooltip={"text": "{name}"},

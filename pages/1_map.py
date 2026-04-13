@@ -18,6 +18,7 @@ def get_data():
 
 
 zones, passages, stations = get_data()
+station_charset = '"' + "".join(sorted({ch for s in stations for ch in s["name"]})) + '"'
 
 zones_colored = {
     "type": "FeatureCollection",
@@ -76,10 +77,12 @@ station_labels = pdk.Layer(
     data=stations,
     get_position="[lon, lat]",
     get_text="name",
+    character_set=station_charset,
+    font_family='"Arial, sans-serif"',
     get_size=14,
     get_color=[0, 0, 0, 255],
     get_anchor="start",
-    get_pixel_offset="[15, 0]",
+    get_pixel_offset="[36, 0]",
 )
 
 view = pdk.ViewState(latitude=60.00, longitude=29.85, zoom=10, pitch=40)
