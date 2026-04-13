@@ -89,6 +89,7 @@ st.pydeck_chart(
         layers=[zone_layer, passage_layer, station_layer, station_labels],
         initial_view_state=view,
         tooltip={"text": "{name}"},
+        map_style="light",
     ),
     height=800,
 )
