@@ -1,5 +1,6 @@
 """Build a navigation graph from the water grid."""
 
+from math import sqrt
 import numpy as np
 from scipy.sparse import csr_matrix
 
@@ -11,13 +12,15 @@ def build_graph(
     lons: np.ndarray,
     dlat: float,
     dlon: float,
+    neighbor_offsets: list[tuple[int, int]] | None = None,
     cell_zones: np.ndarray | None = None,
     passage_coords: list[tuple[float, float]] | None = None,
     passage_radius_m: float = 1000.0,
 ) -> csr_matrix:
     """Build a sparse adjacency matrix connecting neighboring water cells.
 
-    Uses 8-connectivity (horizontal, vertical, diagonal neighbors).
+    Uses configurable connectivity. By default, 8-neighbor connectivity
+    (horizontal, vertical, diagonal).
     Edge weights are distances in meters.
 
     When ``cell_zones`` is provided, cross-zone edges are only allowed
@@ -30,6 +33,9 @@ def build_graph(
         Coordinates of water grid cells.
     dlat, dlon : float
         Grid step sizes in degrees.
+    neighbor_offsets : list[(drow, dcol)], optional
+        Relative neighbor offsets to connect (e.g. [(-1, 0), (1, 1), ...]).
+        If None, classic 8-neighbor offsets are used.
     cell_zones : ndarray of shape (N,), optional
         Zone label for each cell (e.g. ``"N"`` / ``"S"``).
     passage_coords : list of (lat, lon), optional
@@ -54,21 +60,19 @@ def build_graph(
     for i in range(n):
         cell_map[(rows[i], cols[i])] = i
 
-    # 8-connected neighbors: (drow, dcol, distance_factor)
+    if neighbor_offsets is None:
+        neighbor_offsets = [
+            (-1, 0), (1, 0), (0, -1), (0, 1),
+            (-1, -1), (-1, 1), (1, -1), (1, 1),
+        ]
     neighbors = [
-        (-1, 0, 1.0),
-        (1, 0, 1.0),
-        (0, -1, 1.0),
-        (0, 1, 1.0),
-        (-1, -1, 1.4142135623730951),
-        (-1, 1, 1.4142135623730951),
-        (1, -1, 1.4142135623730951),
-        (1, 1, 1.4142135623730951),
+        (dr, dc, sqrt(float(dr * dr + dc * dc)))
+        for dr, dc in neighbor_offsets
+        if dr != 0 or dc != 0
     ]
 
     cell_lat_m = dlat * METERS_PER_DEG_LAT
     cell_lon_m = dlon * METERS_PER_DEG_LON
-    cell_m = (cell_lat_m + cell_lon_m) / 2.0
 
     # Pre-check: is cross-zone filtering needed?
     filter_zones = cell_zones is not None and passage_coords is not None
@@ -79,7 +83,7 @@ def build_graph(
 
     for i in range(n):
         r, c = rows[i], cols[i]
-        for dr, dc, dist_factor in neighbors:
+        for dr, dc, _ in neighbors:
             j = cell_map.get((r + dr, c + dc))
             if j is None:
                 continue
@@ -95,7 +99,8 @@ def build_graph(
 
             src_list.append(i)
             dst_list.append(j)
-            weight_list.append(cell_m * dist_factor)
+            edge_m = sqrt((dr * cell_lat_m) ** 2 + (dc * cell_lon_m) ** 2)
+            weight_list.append(edge_m)
 
     return csr_matrix(
         (np.array(weight_list, dtype=np.float32), (src_list, dst_list)),
