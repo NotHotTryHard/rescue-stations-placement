@@ -5,6 +5,7 @@ import pydeck as pdk
 import numpy as np
 
 from src.data import load_stations_raw
+from src.config import get_config_value, MAPBOX_TOKEN
 from src.session import sidebar_controls, get_results
 from src.coverage import coverage_curve, coverage_at_thresholds, station_zones, blind_spots
 
@@ -18,6 +19,7 @@ lats, lons, travel, min_times, stations = get_results()
 stations_raw = load_stations_raw()
 station_charset = '"' + "".join(sorted({ch for s in stations_raw for ch in s["name"]})) + '"'
 view = pdk.ViewState(latitude=60.00, longitude=29.85, zoom=10, pitch=0)
+map_style = get_config_value("map_style")
 
 # --- 1. Coverage curve ---
 st.subheader("Кривая покрытия")
@@ -65,7 +67,8 @@ st.pydeck_chart(
         ],
         initial_view_state=view,
         tooltip={"text": "Станция: {name}"},
-        map_style="light",
+        map_style=map_style,
+        api_keys={"mapbox": MAPBOX_TOKEN},
     ),
     height=600,
 )
@@ -99,7 +102,8 @@ else:
             ],
             initial_view_state=view,
             tooltip={"text": "{name}"},
-            map_style="light",
+            map_style=map_style,
+            api_keys={"mapbox": MAPBOX_TOKEN},
         ),
         height=600,
     )

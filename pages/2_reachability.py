@@ -5,6 +5,7 @@ import pydeck as pdk
 import numpy as np
 
 from src.data import load_stations_raw, load_passages
+from src.config import get_config_value, MAPBOX_TOKEN
 from src.session import sidebar_controls, get_results
 from src.coverage import blind_spots
 
@@ -57,6 +58,7 @@ passages = load_passages()
 passages_data = [{"name": v["name"], "lat": v["lat"], "lon": v["lon"]} for v in passages.values()]
 
 view = pdk.ViewState(latitude=60.00, longitude=29.85, zoom=10, pitch=0)
+map_style = get_config_value("map_style")
 
 main_layer = (
     pdk.Layer(
@@ -95,7 +97,8 @@ st.pydeck_chart(
         ],
         initial_view_state=view,
         tooltip={"text": tooltip_text},
-        map_style="light",
+        map_style=map_style,
+        api_keys={"mapbox": MAPBOX_TOKEN},
     ),
     height=800,
 )

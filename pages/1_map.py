@@ -4,6 +4,7 @@ import streamlit as st
 import pydeck as pdk
 
 from src.data import load_zones_geojson, load_passages, load_stations_raw
+from src.config import get_config_value, MAPBOX_TOKEN
 
 st.set_page_config(page_title="Карта", layout="wide")
 st.title("Карта акватории")
@@ -86,13 +87,15 @@ station_labels = pdk.Layer(
 )
 
 view = pdk.ViewState(latitude=60.00, longitude=29.85, zoom=10, pitch=40)
+map_style = get_config_value("map_style")
 
 st.pydeck_chart(
     pdk.Deck(
         layers=[zone_layer, passage_layer, station_layer, station_labels],
         initial_view_state=view,
         tooltip={"text": "{name}"},
-        map_style="light",
+        map_style=map_style,
+        api_keys={"mapbox": MAPBOX_TOKEN},
     ),
     height=800,
 )
