@@ -12,6 +12,7 @@ from src.config import (
     parse_offset_key,
     recommended_offset_keys,
 )
+from src.data import load_risk_scenarios
 
 st.set_page_config(page_title="Настройки", layout="wide")
 st.title("Настройки")
@@ -26,6 +27,23 @@ cfg["map_style"] = st.selectbox(
     "Стиль карты (pydeck map_style)",
     MAP_STYLE_OPTIONS,
     index=MAP_STYLE_OPTIONS.index(map_style),
+)
+
+st.subheader("Модель происшествий")
+
+risk_scenarios = load_risk_scenarios()
+risk_options = list(risk_scenarios)
+current_risk = cfg.get("risk_scenario", DEFAULT_CONFIG["risk_scenario"])
+if current_risk not in risk_scenarios:
+    current_risk = DEFAULT_CONFIG["risk_scenario"]
+if current_risk not in risk_scenarios:
+    current_risk = risk_options[0]
+
+cfg["risk_scenario"] = st.selectbox(
+    "Сценарий модельной плотности",
+    risk_options,
+    index=risk_options.index(current_risk),
+    format_func=lambda key: risk_scenarios[key].get("title", key),
 )
 
 st.subheader("Межклеточные связи графа")

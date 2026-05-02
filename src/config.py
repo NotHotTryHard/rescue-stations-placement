@@ -8,6 +8,7 @@ MAPBOX_TOKEN = "pk.eyJ1Ijoibm90aG90dHJ5aGFyZCIsImEiOiJjbW54bWg5aWMwM2FxMnFyOHlke
 DEFAULT_CONFIG = {
     "map_style": "mapbox://styles/mapbox/light-v11",
     "neighbor_level": 3,
+    "risk_scenario": "summer",
 }
 
 MAP_STYLE_OPTIONS = [

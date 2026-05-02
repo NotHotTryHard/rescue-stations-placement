@@ -5,10 +5,12 @@ import streamlit as st
 
 from .data import (
     load_water_polygon, load_stations, classify_cells_by_zone, get_passage_coords,
+    load_risk_scenarios,
 )
-from .config import get_neighbor_offsets, get_config_value
+from .config import ensure_config, get_neighbor_offsets, get_config_value
 from .grid import generate_grid, snap_to_grid
 from .graph import build_graph
+from .risk_distribution import IncidentDistribution
 from .routing import compute_travel_times
 
 
@@ -75,3 +77,32 @@ def get_results():
     r = st.session_state["results"]
     return r["lats"], r["lons"], r["travel_times"], r["min_times"], r["stations"]
 
+
+def get_risk_distribution() -> IncidentDistribution:
+    """Return the configured incident distribution over the current grid."""
+    lats, lons, _, _, _ = get_results()
+    cfg = ensure_config()
+    scenarios = load_risk_scenarios()
+    scenario = cfg.get("risk_scenario", "summer")
+    if scenario not in scenarios:
+        scenario = next(iter(scenarios))
+        cfg["risk_scenario"] = scenario
+
+    cell_size = st.session_state.get("cell_size", 300)
+    cached = st.session_state.get("risk_distribution")
+    signature = (scenario, cell_size, len(lats))
+    if cached is None or cached.get("signature") != signature:
+        with st.spinner("Расчёт модельной плотности происшествий..."):
+            dist = IncidentDistribution.from_scenario(
+                scenario,
+                lats,
+                lons,
+                scenarios,
+                water_polygon=load_water_polygon(),
+            )
+            st.session_state["risk_distribution"] = {
+                "signature": signature,
+                "distribution": dist,
+            }
+
+    return st.session_state["risk_distribution"]["distribution"]

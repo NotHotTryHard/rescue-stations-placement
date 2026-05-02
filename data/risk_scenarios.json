@@ -1,0 +1,125 @@
+{
+  "summer": {
+    "title": "Летний сценарий",
+    "kind": "component_mixture",
+    "normalize_components": true,
+    "components": [
+      {
+        "name": "fairway",
+        "title": "Фарватеры и судоходные пути",
+        "kind": "anisotropic_gaussian_mixture",
+        "weight": 0.45,
+        "kernels": [
+          {
+            "lat": 59.9913,
+            "lon": 29.695,
+            "weight": 1.2,
+            "sigma_x_m": 5500,
+            "sigma_y_m": 850,
+            "angle_deg": 15
+          },
+          {
+            "lat": 59.986,
+            "lon": 29.89,
+            "weight": 1.0,
+            "sigma_x_m": 9000,
+            "sigma_y_m": 900,
+            "angle_deg": 12
+          },
+          {
+            "lat": 59.981,
+            "lon": 30.08,
+            "weight": 0.8,
+            "sigma_x_m": 7000,
+            "sigma_y_m": 900,
+            "angle_deg": 8
+          }
+        ]
+      },
+      {
+        "name": "ports",
+        "title": "Порты и гавани",
+        "kind": "gaussian_mixture",
+        "weight": 0.25,
+        "kernels": [
+          {"lat": 59.996, "lon": 29.765, "weight": 1.0, "sigma_m": 1700},
+          {"lat": 59.912, "lon": 29.77, "weight": 0.8, "sigma_m": 1800},
+          {"lat": 59.895, "lon": 30.22, "weight": 1.1, "sigma_m": 2200}
+        ]
+      },
+      {
+        "name": "recreation",
+        "title": "Рекреационные зоны",
+        "kind": "gaussian_mixture",
+        "weight": 0.2,
+        "kernels": [
+          {"lat": 60.095, "lon": 29.955, "weight": 1.0, "sigma_m": 2400},
+          {"lat": 60.016, "lon": 30.02, "weight": 0.8, "sigma_m": 2200},
+          {"lat": 59.885, "lon": 29.91, "weight": 0.8, "sigma_m": 2200},
+          {"lat": 59.86, "lon": 30.04, "weight": 0.7, "sigma_m": 2200}
+        ]
+      },
+      {
+        "name": "population",
+        "title": "Населенные пункты и береговая инфраструктура",
+        "kind": "gaussian_mixture",
+        "weight": 0.1,
+        "kernels": [
+          {"lat": 59.998, "lon": 29.766, "weight": 1.0, "sigma_m": 2500},
+          {"lat": 60.093, "lon": 29.958, "weight": 0.8, "sigma_m": 2600},
+          {"lat": 59.916, "lon": 29.772, "weight": 0.8, "sigma_m": 2500},
+          {"lat": 59.884, "lon": 29.908, "weight": 0.7, "sigma_m": 2500},
+          {"lat": 59.982, "lon": 30.22, "weight": 1.1, "sigma_m": 3000}
+        ]
+      }
+    ]
+  },
+  "winter": {
+    "title": "Зимний сценарий",
+    "kind": "component_mixture",
+    "normalize_components": true,
+    "components": [
+      {
+        "name": "shore",
+        "title": "Близость к берегу",
+        "kind": "shore_distance",
+        "weight": 0.25,
+        "sigma_m": 1400
+      },
+      {
+        "name": "population",
+        "title": "Населенные пункты и береговая инфраструктура",
+        "kind": "gaussian_mixture",
+        "weight": 0.25,
+        "kernels": [
+          {"lat": 59.998, "lon": 29.766, "weight": 1.0, "sigma_m": 2700},
+          {"lat": 60.093, "lon": 29.958, "weight": 0.9, "sigma_m": 2800},
+          {"lat": 59.916, "lon": 29.772, "weight": 0.8, "sigma_m": 2600},
+          {"lat": 59.884, "lon": 29.908, "weight": 0.7, "sigma_m": 2600},
+          {"lat": 59.982, "lon": 30.22, "weight": 1.1, "sigma_m": 3200}
+        ]
+      },
+      {
+        "name": "fishing",
+        "title": "Популярные районы зимней рыбалки",
+        "kind": "gaussian_mixture",
+        "weight": 0.5,
+        "kernels": [
+          {"lat": 60.018, "lon": 29.77, "weight": 1.0, "sigma_m": 3000},
+          {"lat": 60.086, "lon": 29.93, "weight": 1.0, "sigma_m": 3200},
+          {"lat": 60.018, "lon": 30.02, "weight": 0.9, "sigma_m": 2800},
+          {"lat": 59.978, "lon": 30.12, "weight": 0.8, "sigma_m": 2800},
+          {"lat": 59.895, "lon": 29.86, "weight": 0.8, "sigma_m": 3000}
+        ]
+      }
+    ]
+  },
+  "annual": {
+    "title": "Годовой смешанный сценарий",
+    "kind": "scenario_mixture",
+    "scenarios": [
+      {"name": "summer", "weight": 0.6},
+      {"name": "winter", "weight": 0.4}
+    ]
+  }
+}

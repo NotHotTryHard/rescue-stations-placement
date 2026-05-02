@@ -36,6 +36,11 @@ def load_passages() -> dict:
         return json.load(f)
 
 
+def load_risk_scenarios() -> dict:
+    with open(DATA_DIR / "risk_scenarios.json", encoding="utf-8") as f:
+        return json.load(f)
+
+
 def load_zones_geojson() -> dict:
     with open(DATA_DIR / "neva_zone.geojson") as f:
         return json.load(f)
