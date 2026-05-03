@@ -85,6 +85,13 @@
         ]
       },
       {
+        "name": "shore",
+        "title": "Близость к берегу",
+        "kind": "shore_distance",
+        "weight": 0.2,
+        "sigma_m": 300
+      },
+      {
         "name": "ports",
         "title": "Порты и гавани",
         "kind": "gaussian_mixture",
@@ -146,7 +153,7 @@
         "name": "population",
         "title": "Населенные пункты и береговая инфраструктура",
         "kind": "gaussian_mixture",
-        "weight": 0.0,
+        "weight": 0.3,
         "kernels": [
           {
             "lat": 59.998,
@@ -192,7 +199,7 @@
         "title": "Близость к берегу",
         "kind": "shore_distance",
         "weight": 0.12,
-        "sigma_m": 1400
+        "sigma_m": 1000
       },
       {
         "name": "population",
