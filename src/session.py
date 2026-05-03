@@ -48,7 +48,7 @@ def _compute(cell_size_m: int, neighbor_offsets: list[tuple[int, int]], neighbor
 def sidebar_controls():
     """Shared cell size slider. Persists via session_state."""
     if "cell_size" not in st.session_state:
-        st.session_state["cell_size"] = 300
+        st.session_state["cell_size"] = 200
     val = st.sidebar.slider(
         "Размер ячейки (м)", 40, 1000,
         value=st.session_state["cell_size"], step=20,
@@ -59,7 +59,7 @@ def sidebar_controls():
 
 def get_results():
     """Return precomputed results, recomputing only when cell_size changes."""
-    cell_size = st.session_state.get("cell_size", 300)
+    cell_size = st.session_state.get("cell_size", 200)
     neighbor_level = int(get_config_value("neighbor_level"))
     neighbor_offsets = get_neighbor_offsets()
     neighbor_offsets_sig = tuple(neighbor_offsets)
@@ -88,7 +88,7 @@ def get_risk_distribution() -> IncidentDistribution:
         scenario = next(iter(scenarios))
         cfg["risk_scenario"] = scenario
 
-    cell_size = st.session_state.get("cell_size", 300)
+    cell_size = st.session_state.get("cell_size", 200)
     cached = st.session_state.get("risk_distribution")
     signature = (scenario, cell_size, len(lats))
     if cached is None or cached.get("signature") != signature:

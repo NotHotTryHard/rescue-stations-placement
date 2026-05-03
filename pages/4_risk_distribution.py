@@ -17,7 +17,7 @@ def _scaled_values(values: np.ndarray, log_scale: bool) -> np.ndarray:
         return np.zeros_like(values)
     ratios = values / max_value
     if log_scale:
-        return np.log1p(ratios * 99.0) / np.log1p(99.0)
+        return np.log1p(ratios * 9999.0) / np.log1p(9999.0)
     return ratios
 
 
@@ -65,9 +65,9 @@ values = dist.lambda_values if value_mode.startswith("Интенсивность
 plot_values = _scaled_values(values, log_scale=log_scale)
 
 reachable_risk = dist.probability(np.isfinite(min_times)) * 100
-covered_risk = dist.probability(
-    np.isfinite(min_times) & (min_times <= coverage_threshold)
-) * 100
+covered_risk = (
+    dist.probability(np.isfinite(min_times) & (min_times <= coverage_threshold)) * 100
+)
 mean_time = expected_response_time(min_times, dist.weights, finite_only=True)
 
 col1, col2, col3, col4 = st.columns(4)
@@ -116,7 +116,9 @@ if show_samples:
     )
 
 stations_raw = load_stations_raw()
-station_charset = '"' + "".join(sorted({ch for s in stations_raw for ch in s["name"]})) + '"'
+station_charset = (
+    '"' + "".join(sorted({ch for s in stations_raw for ch in s["name"]})) + '"'
+)
 layers.extend(
     [
         pdk.Layer(
