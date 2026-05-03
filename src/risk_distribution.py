@@ -5,7 +5,7 @@ from math import cos, radians, sin
 from typing import Any, Callable
 
 import numpy as np
-from shapely.geometry import Point
+from shapely.geometry import LineString, Point
 from shapely.ops import transform
 
 from .grid import METERS_PER_DEG_LAT, METERS_PER_DEG_LON
@@ -203,6 +203,23 @@ def shore_distance_intensity(
     return np.exp(-(distances * distances) / (2.0 * sigma_m**2))
 
 
+def line_distance_mixture(lats: np.ndarray, lons: np.ndarray, lines: list[dict]) -> np.ndarray:
+    """Evaluate line-based components with per-line weight and sigma."""
+    out = np.zeros(len(lats), dtype=np.float64)
+    for line in lines:
+        sigma_m = float(line["sigma_m"])
+        if sigma_m <= 0:
+            raise ValueError("line sigma_m must be positive")
+
+        points = line["points"]
+        geometry = LineString([(p["lon"], p["lat"]) for p in points])
+        distances = distance_to_geometry_m(lats, lons, geometry)
+        out += float(line.get("weight", 1.0)) * np.exp(
+            -(distances * distances) / (2.0 * sigma_m**2)
+        )
+    return out
+
+
 def coordinate_offsets_m(
     lats: np.ndarray,
     lons: np.ndarray,
@@ -354,6 +371,9 @@ def component_intensity(
             shoreline if shoreline is not None else water_polygon.boundary,
             sigma_m=float(component["sigma_m"]),
         )
+
+    if kind == "line_distance":
+        return line_distance_mixture(lats, lons, component.get("lines", []))
 
     if kind == "uniform":
         return np.ones(len(lats), dtype=np.float64)
