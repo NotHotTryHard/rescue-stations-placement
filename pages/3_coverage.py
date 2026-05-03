@@ -5,13 +5,8 @@ import pydeck as pdk
 
 from src.data import load_stations_raw
 from src.config import get_config_value, MAPBOX_TOKEN
-from src.session import sidebar_controls, get_results, get_risk_distribution
-from src.coverage import (
-    coverage_at_thresholds,
-    station_zones,
-    weighted_coverage_at_thresholds,
-    weighted_station_zones,
-)
+from src.session import sidebar_controls, get_results
+from src.coverage import coverage_at_thresholds, station_zones
 
 st.set_page_config(page_title="Зоны ответственности", layout="wide")
 st.title("Зоны ответственности")
@@ -19,7 +14,6 @@ st.title("Зоны ответственности")
 cell_size = sidebar_controls()
 
 lats, lons, travel, min_times, stations = get_results()
-dist = get_risk_distribution()
 stations_raw = load_stations_raw()
 station_charset = '"' + "".join(sorted({ch for s in stations_raw for ch in s["name"]})) + '"'
 view = pdk.ViewState(latitude=60.00, longitude=29.85, zoom=10, pitch=0)
@@ -30,15 +24,7 @@ cols = st.columns(len(rows))
 for col, (t, pct) in zip(cols, rows):
     col.metric(f"{t:.0f} мин", f"{pct:.1f}%")
 
-st.subheader("Покрытие по модельному риску")
-risk_rows = weighted_coverage_at_thresholds(min_times, dist.weights, [5, 10, 15, 20, 25, 30])
-risk_cols = st.columns(len(risk_rows))
-for col, (t, pct) in zip(risk_cols, risk_rows):
-    col.metric(f"{t:.0f} мин", f"{pct:.1f}%")
-
 assignments, zone_sizes = station_zones(travel, min_times)
-_, zone_risks = weighted_station_zones(travel, min_times, dist.weights)
-risk_by_station = {s_idx: risk for s_idx, risk in zone_risks}
 
 COLORS = [
     [228, 26, 28], [55, 126, 184], [77, 175, 74], [152, 78, 163],
@@ -74,8 +60,7 @@ st.pydeck_chart(
 )
 
 for s_idx, count in zone_sizes:
-    risk_pct = risk_by_station.get(s_idx, 0.0) * 100
     st.write(
         f"- **{stations[s_idx].name}**: {count:,} "
-        f"({count / len(lats) * 100:.1f}% площади), {risk_pct:.1f}% риска"
+        f"({count / len(lats) * 100:.1f}%)"
     )

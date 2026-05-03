@@ -48,10 +48,6 @@ cfg["risk_scenario"] = st.sidebar.selectbox(
     index=risk_options.index(current_risk),
     format_func=lambda key: risk_scenarios[key].get("title", key),
 )
-value_mode = st.sidebar.radio(
-    "Показатель",
-    ["Интенсивность lambda", "Вероятность ячейки Q"],
-)
 log_scale = st.sidebar.checkbox("Логарифмическая окраска", value=True)
 coverage_threshold = st.sidebar.slider("Порог покрытия риска (мин)", 5, 40, 20, 1)
 show_samples = st.sidebar.checkbox("Показывать сэмплы происшествий", value=True)
@@ -61,20 +57,17 @@ sample_seed = st.sidebar.number_input("Seed", value=1, step=1)
 lats, lons, _, min_times, _ = get_results()
 dist = get_risk_distribution()
 
-values = dist.lambda_values if value_mode.startswith("Интенсивность") else dist.weights
-plot_values = _scaled_values(values, log_scale=log_scale)
+plot_values = _scaled_values(dist.lambda_values, log_scale=log_scale)
 
-reachable_risk = dist.probability(np.isfinite(min_times)) * 100
 covered_risk = (
     dist.probability(np.isfinite(min_times) & (min_times <= coverage_threshold)) * 100
 )
 mean_time = expected_response_time(min_times, dist.weights, finite_only=True)
 
-col1, col2, col3, col4 = st.columns(4)
+col1, col2, col3 = st.columns(3)
 col1.metric("Ячеек", f"{len(lats):,}")
-col2.metric("Достижимый риск", f"{reachable_risk:.1f}%")
-col3.metric(f"Риск до {coverage_threshold} мин", f"{covered_risk:.1f}%")
-col4.metric("Ожидаемое время", f"{mean_time:.1f} мин")
+col2.metric(f"Риск до {coverage_threshold} мин", f"{covered_risk:.1f}%")
+col3.metric("Ожидаемое время", f"{mean_time:.1f} мин")
 
 grid_data = [
     {
