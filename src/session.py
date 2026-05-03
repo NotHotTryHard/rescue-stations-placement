@@ -5,7 +5,7 @@ import streamlit as st
 
 from .data import (
     load_water_polygon, load_stations, classify_cells_by_zone, get_passage_coords,
-    load_risk_scenarios,
+    load_risk_scenarios, load_shoreline,
 )
 from .config import ensure_config, get_neighbor_offsets, get_config_value
 from .grid import generate_grid, snap_to_grid
@@ -99,6 +99,7 @@ def get_risk_distribution() -> IncidentDistribution:
                 lons,
                 scenarios,
                 water_polygon=load_water_polygon(),
+                shoreline=load_shoreline(),
             )
             st.session_state["risk_distribution"] = {
                 "signature": signature,

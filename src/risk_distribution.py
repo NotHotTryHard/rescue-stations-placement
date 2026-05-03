@@ -68,6 +68,7 @@ class IncidentDistribution:
         lons: np.ndarray,
         scenarios: dict[str, Any],
         water_polygon=None,
+        shoreline=None,
         cell_areas: np.ndarray | None = None,
     ) -> "IncidentDistribution":
         lambda_values = scenario_intensity(
@@ -76,6 +77,7 @@ class IncidentDistribution:
             name,
             scenarios,
             water_polygon=water_polygon,
+            shoreline=shoreline,
             cell_areas=cell_areas,
         )
         return cls.from_intensity(name, lats, lons, lambda_values, cell_areas=cell_areas)
@@ -188,16 +190,16 @@ def anisotropic_gaussian_mixture(
 def shore_distance_intensity(
     lats: np.ndarray,
     lons: np.ndarray,
-    water_polygon,
+    shoreline,
     sigma_m: float,
 ) -> np.ndarray:
-    """Risk component that decays with distance from the water boundary."""
-    if water_polygon is None:
-        raise ValueError("water_polygon is required for shore_distance components")
+    """Risk component that decays with distance from the real shoreline."""
+    if shoreline is None:
+        raise ValueError("shoreline is required for shore_distance components")
     if sigma_m <= 0:
         raise ValueError("sigma_m must be positive")
 
-    distances = distance_to_geometry_m(lats, lons, water_polygon.boundary)
+    distances = distance_to_geometry_m(lats, lons, shoreline)
     return np.exp(-(distances * distances) / (2.0 * sigma_m**2))
 
 
@@ -273,6 +275,7 @@ def scenario_intensity(
     name: str,
     scenarios: dict[str, Any],
     water_polygon=None,
+    shoreline=None,
     cell_areas: np.ndarray | None = None,
     _stack: tuple[str, ...] = (),
 ) -> np.ndarray:
@@ -292,6 +295,7 @@ def scenario_intensity(
             cfg,
             scenarios,
             water_polygon=water_polygon,
+            shoreline=shoreline,
             cell_areas=cell_areas,
             stack=(*_stack, name),
         )
@@ -303,6 +307,7 @@ def scenario_intensity(
         lons,
         cfg,
         water_polygon=water_polygon,
+        shoreline=shoreline,
         cell_areas=cell_areas,
     )
 
@@ -312,6 +317,7 @@ def component_intensity(
     lons: np.ndarray,
     component: dict[str, Any],
     water_polygon=None,
+    shoreline=None,
 ) -> np.ndarray:
     """Build raw lambda values for one configured component."""
     kind = component.get("kind", "gaussian_mixture")
@@ -345,7 +351,7 @@ def component_intensity(
         return shore_distance_intensity(
             lats,
             lons,
-            water_polygon,
+            shoreline if shoreline is not None else water_polygon.boundary,
             sigma_m=float(component["sigma_m"]),
         )
 
@@ -360,6 +366,7 @@ def _component_mixture_intensity(
     lons: np.ndarray,
     cfg: dict[str, Any],
     water_polygon=None,
+    shoreline=None,
     cell_areas: np.ndarray | None = None,
 ) -> np.ndarray:
     normalize_components = bool(cfg.get("normalize_components", True))
@@ -367,7 +374,13 @@ def _component_mixture_intensity(
 
     for component in cfg.get("components", []):
         weight = float(component.get("weight", 1.0))
-        values = component_intensity(lats, lons, component, water_polygon=water_polygon)
+        values = component_intensity(
+            lats,
+            lons,
+            component,
+            water_polygon=water_polygon,
+            shoreline=shoreline,
+        )
         if normalize_components:
             values = intensity_to_density(values, cell_areas=cell_areas)
         out += weight * values
@@ -383,6 +396,7 @@ def _scenario_mixture_intensity(
     cfg: dict[str, Any],
     scenarios: dict[str, Any],
     water_polygon=None,
+    shoreline=None,
     cell_areas: np.ndarray | None = None,
     stack: tuple[str, ...] = (),
 ) -> np.ndarray:
@@ -396,6 +410,7 @@ def _scenario_mixture_intensity(
             child_name,
             scenarios,
             water_polygon=water_polygon,
+            shoreline=shoreline,
             cell_areas=cell_areas,
             _stack=stack,
         )

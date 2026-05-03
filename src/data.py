@@ -46,6 +46,18 @@ def load_zones_geojson() -> dict:
         return json.load(f)
 
 
+def load_shoreline_geojson() -> dict:
+    with open(DATA_DIR / "shoreline.geojson", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def load_shoreline():
+    """Load coastline used for shore-distance risk components."""
+    geojson = load_shoreline_geojson()
+    lines = [shape(f["geometry"]) for f in geojson["features"]]
+    return unary_union(lines)
+
+
 def load_water_polygon():
     """Union of all water zone polygons as a single Shapely geometry."""
     geojson = load_zones_geojson()
