@@ -42,9 +42,24 @@
         "kind": "gaussian_mixture",
         "weight": 0.25,
         "kernels": [
-          {"lat": 59.996, "lon": 29.765, "weight": 1.0, "sigma_m": 1700},
-          {"lat": 59.912, "lon": 29.77, "weight": 0.8, "sigma_m": 1800},
-          {"lat": 59.895, "lon": 30.22, "weight": 1.1, "sigma_m": 2200}
+          {
+            "lat": 59.996,
+            "lon": 29.765,
+            "weight": 1.0,
+            "sigma_m": 1700
+          },
+          {
+            "lat": 59.912,
+            "lon": 29.77,
+            "weight": 0.8,
+            "sigma_m": 1800
+          },
+          {
+            "lat": 59.895,
+            "lon": 30.22,
+            "weight": 1.1,
+            "sigma_m": 2200
+          }
         ]
       },
       {
@@ -53,10 +68,30 @@
         "kind": "gaussian_mixture",
         "weight": 0.2,
         "kernels": [
-          {"lat": 60.095, "lon": 29.955, "weight": 1.0, "sigma_m": 2400},
-          {"lat": 60.016, "lon": 30.02, "weight": 0.8, "sigma_m": 2200},
-          {"lat": 59.885, "lon": 29.91, "weight": 0.8, "sigma_m": 2200},
-          {"lat": 59.86, "lon": 30.04, "weight": 0.7, "sigma_m": 2200}
+          {
+            "lat": 60.095,
+            "lon": 29.955,
+            "weight": 1.0,
+            "sigma_m": 2400
+          },
+          {
+            "lat": 60.016,
+            "lon": 30.02,
+            "weight": 0.8,
+            "sigma_m": 2200
+          },
+          {
+            "lat": 59.885,
+            "lon": 29.91,
+            "weight": 0.8,
+            "sigma_m": 2200
+          },
+          {
+            "lat": 59.86,
+            "lon": 30.04,
+            "weight": 0.7,
+            "sigma_m": 2200
+          }
         ]
       },
       {
@@ -65,11 +100,36 @@
         "kind": "gaussian_mixture",
         "weight": 0.1,
         "kernels": [
-          {"lat": 59.998, "lon": 29.766, "weight": 1.0, "sigma_m": 2500},
-          {"lat": 60.093, "lon": 29.958, "weight": 0.8, "sigma_m": 2600},
-          {"lat": 59.916, "lon": 29.772, "weight": 0.8, "sigma_m": 2500},
-          {"lat": 59.884, "lon": 29.908, "weight": 0.7, "sigma_m": 2500},
-          {"lat": 59.982, "lon": 30.22, "weight": 1.1, "sigma_m": 3000}
+          {
+            "lat": 59.998,
+            "lon": 29.766,
+            "weight": 1.0,
+            "sigma_m": 2500
+          },
+          {
+            "lat": 60.093,
+            "lon": 29.958,
+            "weight": 0.8,
+            "sigma_m": 2600
+          },
+          {
+            "lat": 59.916,
+            "lon": 29.772,
+            "weight": 0.8,
+            "sigma_m": 2500
+          },
+          {
+            "lat": 59.884,
+            "lon": 29.908,
+            "weight": 0.7,
+            "sigma_m": 2500
+          },
+          {
+            "lat": 59.982,
+            "lon": 30.22,
+            "weight": 1.1,
+            "sigma_m": 3000
+          }
         ]
       }
     ]
@@ -83,33 +143,397 @@
         "name": "shore",
         "title": "Близость к берегу",
         "kind": "shore_distance",
-        "weight": 0.25,
+        "weight": 0.0,
         "sigma_m": 1400
       },
       {
         "name": "population",
         "title": "Населенные пункты и береговая инфраструктура",
         "kind": "gaussian_mixture",
-        "weight": 0.25,
+        "weight": 0.0,
         "kernels": [
-          {"lat": 59.998, "lon": 29.766, "weight": 1.0, "sigma_m": 2700},
-          {"lat": 60.093, "lon": 29.958, "weight": 0.9, "sigma_m": 2800},
-          {"lat": 59.916, "lon": 29.772, "weight": 0.8, "sigma_m": 2600},
-          {"lat": 59.884, "lon": 29.908, "weight": 0.7, "sigma_m": 2600},
-          {"lat": 59.982, "lon": 30.22, "weight": 1.1, "sigma_m": 3200}
+          {
+            "lat": 59.998,
+            "lon": 29.766,
+            "weight": 1.0,
+            "sigma_m": 2700
+          },
+          {
+            "lat": 60.093,
+            "lon": 29.958,
+            "weight": 0.9,
+            "sigma_m": 2800
+          },
+          {
+            "lat": 59.916,
+            "lon": 29.772,
+            "weight": 0.8,
+            "sigma_m": 2600
+          },
+          {
+            "lat": 59.884,
+            "lon": 29.908,
+            "weight": 0.7,
+            "sigma_m": 2600
+          },
+          {
+            "lat": 59.982,
+            "lon": 30.22,
+            "weight": 1.1,
+            "sigma_m": 3200
+          }
         ]
       },
       {
         "name": "fishing",
         "title": "Популярные районы зимней рыбалки",
-        "kind": "gaussian_mixture",
-        "weight": 0.5,
+        "kind": "anisotropic_gaussian_mixture",
+        "weight": 1.0,
         "kernels": [
-          {"lat": 60.018, "lon": 29.77, "weight": 1.0, "sigma_m": 3000},
-          {"lat": 60.086, "lon": 29.93, "weight": 1.0, "sigma_m": 3200},
-          {"lat": 60.018, "lon": 30.02, "weight": 0.9, "sigma_m": 2800},
-          {"lat": 59.978, "lon": 30.12, "weight": 0.8, "sigma_m": 2800},
-          {"lat": 59.895, "lon": 29.86, "weight": 0.8, "sigma_m": 3000}
+          {
+            "lat": 60.122285,
+            "lon": 29.563133,
+            "weight": 275.0,
+            "sigma_x_m": 262.2,
+            "sigma_y_m": 262.8,
+            "angle_deg": 0
+          },
+          {
+            "lat": 60.133144,
+            "lon": 29.569965,
+            "weight": 55.0,
+            "sigma_x_m": 117.3,
+            "sigma_y_m": 117.5,
+            "angle_deg": 0
+          },
+          {
+            "lat": 60.141761,
+            "lon": 29.574912,
+            "weight": 55.0,
+            "sigma_x_m": 117.3,
+            "sigma_y_m": 117.5,
+            "angle_deg": 0
+          },
+          {
+            "lat": 60.153211,
+            "lon": 29.581037,
+            "weight": 55.0,
+            "sigma_x_m": 117.3,
+            "sigma_y_m": 117.5,
+            "angle_deg": 0
+          },
+          {
+            "lat": 60.162181,
+            "lon": 29.586219,
+            "weight": 275.0,
+            "sigma_x_m": 262.2,
+            "sigma_y_m": 262.8,
+            "angle_deg": 0
+          },
+          {
+            "lat": 60.164778,
+            "lon": 29.661366,
+            "weight": 600.0,
+            "sigma_x_m": 262.2,
+            "sigma_y_m": 262.8,
+            "angle_deg": 0
+          },
+          {
+            "lat": 60.16348,
+            "lon": 29.684452,
+            "weight": 120.0,
+            "sigma_x_m": 117.3,
+            "sigma_y_m": 117.5,
+            "angle_deg": 0
+          },
+          {
+            "lat": 60.162181,
+            "lon": 29.705654,
+            "weight": 600.0,
+            "sigma_x_m": 262.2,
+            "sigma_y_m": 262.8,
+            "angle_deg": 0
+          },
+          {
+            "lat": 60.160175,
+            "lon": 29.731567,
+            "weight": 120.0,
+            "sigma_x_m": 117.3,
+            "sigma_y_m": 117.5,
+            "angle_deg": 0
+          },
+          {
+            "lat": 60.15746,
+            "lon": 29.760071,
+            "weight": 600.0,
+            "sigma_x_m": 262.2,
+            "sigma_y_m": 262.8,
+            "angle_deg": 0
+          },
+          {
+            "lat": 60.147663,
+            "lon": 29.847703,
+            "weight": 115.0,
+            "sigma_x_m": 262.2,
+            "sigma_y_m": 262.8,
+            "angle_deg": 0
+          },
+          {
+            "lat": 60.075661,
+            "lon": 29.818963,
+            "weight": 550.0,
+            "sigma_x_m": 741.7,
+            "sigma_y_m": 743.3,
+            "angle_deg": 0
+          },
+          {
+            "lat": 60.061615,
+            "lon": 29.691284,
+            "weight": 550.0,
+            "sigma_x_m": 524.5,
+            "sigma_y_m": 525.6,
+            "angle_deg": 0
+          },
+          {
+            "lat": 60.105406,
+            "lon": 29.919788,
+            "weight": 90.0,
+            "sigma_x_m": 262.2,
+            "sigma_y_m": 262.8,
+            "angle_deg": 0
+          },
+          {
+            "lat": 60.079792,
+            "lon": 29.907538,
+            "weight": 90.0,
+            "sigma_x_m": 262.2,
+            "sigma_y_m": 262.8,
+            "angle_deg": 0
+          },
+          {
+            "lat": 60.10576,
+            "lon": 29.873616,
+            "weight": 90.0,
+            "sigma_x_m": 262.2,
+            "sigma_y_m": 262.8,
+            "angle_deg": 0
+          },
+          {
+            "lat": 60.100567,
+            "lon": 29.90212,
+            "weight": 135.0,
+            "sigma_x_m": 321.2,
+            "sigma_y_m": 321.9,
+            "angle_deg": 0
+          },
+          {
+            "lat": 59.98619,
+            "lon": 30.010247,
+            "weight": 160.0,
+            "sigma_x_m": 262.2,
+            "sigma_y_m": 262.8,
+            "angle_deg": 0
+          },
+          {
+            "lat": 59.982413,
+            "lon": 30.032862,
+            "weight": 64.0,
+            "sigma_x_m": 165.9,
+            "sigma_y_m": 166.2,
+            "angle_deg": 0
+          },
+          {
+            "lat": 59.977691,
+            "lon": 30.058068,
+            "weight": 160.0,
+            "sigma_x_m": 262.2,
+            "sigma_y_m": 262.8,
+            "angle_deg": 0
+          },
+          {
+            "lat": 60.024551,
+            "lon": 29.813074,
+            "weight": 1050.0,
+            "sigma_x_m": 262.2,
+            "sigma_y_m": 262.8,
+            "angle_deg": 0
+          },
+          {
+            "lat": 60.026676,
+            "lon": 29.835453,
+            "weight": 1050.0,
+            "sigma_x_m": 262.2,
+            "sigma_y_m": 262.8,
+            "angle_deg": 0
+          },
+          {
+            "lat": 60.029155,
+            "lon": 29.8649,
+            "weight": 1050.0,
+            "sigma_x_m": 262.2,
+            "sigma_y_m": 262.8,
+            "angle_deg": 0
+          },
+          {
+            "lat": 60.028329,
+            "lon": 29.892226,
+            "weight": 1050.0,
+            "sigma_x_m": 262.2,
+            "sigma_y_m": 262.8,
+            "angle_deg": 0
+          },
+          {
+            "lat": 60.019476,
+            "lon": 29.916019,
+            "weight": 1050.0,
+            "sigma_x_m": 262.2,
+            "sigma_y_m": 262.8,
+            "angle_deg": 0
+          },
+          {
+            "lat": 60.037299,
+            "lon": 29.577739,
+            "weight": 550.0,
+            "sigma_x_m": 341.9,
+            "sigma_y_m": 342.6,
+            "angle_deg": 0
+          },
+          {
+            "lat": 60.049693,
+            "lon": 29.568787,
+            "weight": 220.0,
+            "sigma_x_m": 216.2,
+            "sigma_y_m": 216.7,
+            "angle_deg": 0
+          },
+          {
+            "lat": 60.061379,
+            "lon": 29.561013,
+            "weight": 550.0,
+            "sigma_x_m": 341.9,
+            "sigma_y_m": 342.6,
+            "angle_deg": 0
+          },
+          {
+            "lat": 59.944759,
+            "lon": 29.67715,
+            "weight": 68.75,
+            "sigma_x_m": 131.1,
+            "sigma_y_m": 131.4,
+            "angle_deg": 0
+          },
+          {
+            "lat": 59.959986,
+            "lon": 29.684217,
+            "weight": 275.0,
+            "sigma_x_m": 262.2,
+            "sigma_y_m": 262.8,
+            "angle_deg": 0
+          },
+          {
+            "lat": 59.974504,
+            "lon": 29.689399,
+            "weight": 68.75,
+            "sigma_x_m": 131.1,
+            "sigma_y_m": 131.4,
+            "angle_deg": 0
+          },
+          {
+            "lat": 59.938267,
+            "lon": 29.810483,
+            "weight": 325.0,
+            "sigma_x_m": 315.8,
+            "sigma_y_m": 316.4,
+            "angle_deg": 0
+          },
+          {
+            "lat": 59.934372,
+            "lon": 29.839929,
+            "weight": 130.0,
+            "sigma_x_m": 199.7,
+            "sigma_y_m": 200.1,
+            "angle_deg": 0
+          },
+          {
+            "lat": 59.929651,
+            "lon": 29.872674,
+            "weight": 325.0,
+            "sigma_x_m": 315.8,
+            "sigma_y_m": 316.4,
+            "angle_deg": 0
+          },
+          {
+            "lat": 59.923749,
+            "lon": 29.899764,
+            "weight": 81.25,
+            "sigma_x_m": 157.9,
+            "sigma_y_m": 158.2,
+            "angle_deg": 0
+          },
+          {
+            "lat": 59.918791,
+            "lon": 29.919317,
+            "weight": 48.75,
+            "sigma_x_m": 122.3,
+            "sigma_y_m": 122.6,
+            "angle_deg": 0
+          },
+          {
+            "lat": 59.910411,
+            "lon": 29.94523,
+            "weight": 325.0,
+            "sigma_x_m": 315.8,
+            "sigma_y_m": 316.4,
+            "angle_deg": 0
+          },
+          {
+            "lat": 59.961874,
+            "lon": 29.874087,
+            "weight": 55.0,
+            "sigma_x_m": 287.3,
+            "sigma_y_m": 287.9,
+            "angle_deg": 0
+          },
+          {
+            "lat": 59.898961,
+            "lon": 30.072909,
+            "weight": 110.0,
+            "sigma_x_m": 287.3,
+            "sigma_y_m": 287.9,
+            "angle_deg": 0
+          },
+          {
+            "lat": 59.883381,
+            "lon": 30.1351,
+            "weight": 175.0,
+            "sigma_x_m": 287.3,
+            "sigma_y_m": 287.9,
+            "angle_deg": 0
+          },
+          {
+            "lat": 59.907106,
+            "lon": 30.152297,
+            "weight": 80.0,
+            "sigma_x_m": 262.2,
+            "sigma_y_m": 262.8,
+            "angle_deg": 0
+          },
+          {
+            "lat": 60.0144,
+            "lon": 29.650294,
+            "weight": 275.0,
+            "sigma_x_m": 262.2,
+            "sigma_y_m": 262.8,
+            "angle_deg": 0
+          },
+          {
+            "lat": 59.974858,
+            "lon": 30.122615,
+            "weight": 102.5,
+            "sigma_x_m": 262.2,
+            "sigma_y_m": 262.8,
+            "angle_deg": 0
+          }
         ]
       }
     ]
@@ -118,8 +542,14 @@
     "title": "Годовой смешанный сценарий",
     "kind": "scenario_mixture",
     "scenarios": [
-      {"name": "summer", "weight": 0.6},
-      {"name": "winter", "weight": 0.4}
+      {
+        "name": "summer",
+        "weight": 0.6
+      },
+      {
+        "name": "winter",
+        "weight": 0.4
+      }
     ]
   }
 }
