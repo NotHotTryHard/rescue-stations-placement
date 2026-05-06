@@ -5,7 +5,7 @@ import pydeck as pdk
 import streamlit as st
 
 from src.config import MAPBOX_TOKEN, ensure_config, get_config_value
-from src.coverage import expected_response_time, weighted_coverage_at_thresholds
+from src.coverage import weighted_coverage_at_thresholds
 from src.data import load_risk_scenarios, load_stations_raw
 from src.session import get_results, get_risk_distribution, sidebar_controls
 
@@ -62,7 +62,7 @@ plot_values = _scaled_values(dist.lambda_values, log_scale=log_scale)
 covered_risk = (
     dist.probability(np.isfinite(min_times) & (min_times <= coverage_threshold)) * 100
 )
-mean_time = expected_response_time(min_times, dist.weights, finite_only=True)
+mean_time = dist.expected_time(min_times, finite_only=True)
 
 col1, col2, col3 = st.columns(3)
 col1.metric("Ячеек", f"{len(lats):,}")

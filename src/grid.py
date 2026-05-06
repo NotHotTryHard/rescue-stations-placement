@@ -1,8 +1,7 @@
 """Generate a regular grid over the water area."""
 
 import numpy as np
-from shapely.geometry import Point
-from shapely.prepared import prep
+from shapely import contains_xy
 
 
 # Approximate meters per degree at ~60°N latitude
@@ -42,19 +41,11 @@ def generate_grid(
     lat_range = np.arange(miny, maxy + dlat, dlat)
     lon_range = np.arange(minx, maxx + dlon, dlon)
 
-    # Use prepared geometry for fast containment checks
-    prepared = prep(water_polygon)
-
-    # Vectorized point generation
     lon_grid, lat_grid = np.meshgrid(lon_range, lat_range)
     lon_flat = lon_grid.ravel()
     lat_flat = lat_grid.ravel()
 
-    # Check containment for all points
-    mask = np.array(
-        [prepared.contains(Point(lon, lat)) for lon, lat in zip(lon_flat, lat_flat)],
-        dtype=bool,
-    )
+    mask = contains_xy(water_polygon, lon_flat, lat_flat)
 
     return lat_flat[mask], lon_flat[mask], dlat, dlon
 

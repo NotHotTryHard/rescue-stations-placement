@@ -69,26 +69,6 @@ def weighted_coverage_at_thresholds(
     ]
 
 
-def expected_response_time(
-    min_times: np.ndarray,
-    weights: np.ndarray,
-    finite_only: bool = False,
-) -> float:
-    """Expected minimum response time under incident probability weights."""
-    times = np.asarray(min_times, dtype=np.float64)
-    w = _normalized_weights(weights, len(times))
-    if finite_only:
-        mask = np.isfinite(times)
-        mass = w[mask].sum()
-        if mass <= 0:
-            return float("inf")
-        return float(np.sum(w[mask] * times[mask]) / mass)
-
-    if np.any((~np.isfinite(times)) & (w > 0)):
-        return float("inf")
-    return float(np.sum(w * times))
-
-
 def station_zones(
     travel_times: np.ndarray,
     min_times: np.ndarray,

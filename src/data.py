@@ -2,9 +2,11 @@
 
 import json
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 
 import numpy as np
+from shapely import contains_xy
 from shapely.geometry import shape
 from shapely.ops import unary_union
 
@@ -17,12 +19,21 @@ class Station:
     lat: float
     lon: float
     speed_kmh: float
+    id: str = ""
+
+    def __post_init__(self):
+        if not self.id:
+            self.id = self.name
 
 
 def load_stations() -> list[Station]:
     with open(DATA_DIR / "stations.json", encoding="utf-8") as f:
         raw = json.load(f)
-    return [Station(**s) for s in raw]
+    stations = [Station(**s) for s in raw]
+    ids = [s.id for s in stations]
+    if len(set(ids)) != len(ids):
+        raise ValueError(f"duplicate station ids in stations.json: {ids}")
+    return stations
 
 
 def load_stations_raw() -> list[dict]:
@@ -36,21 +47,25 @@ def load_passages() -> dict:
         return json.load(f)
 
 
+@lru_cache(maxsize=1)
 def load_risk_scenarios() -> dict:
     with open(DATA_DIR / "risk_scenarios.json", encoding="utf-8") as f:
         return json.load(f)
 
 
+@lru_cache(maxsize=1)
 def load_zones_geojson() -> dict:
     with open(DATA_DIR / "neva_zone.geojson") as f:
         return json.load(f)
 
 
+@lru_cache(maxsize=1)
 def load_shoreline_geojson() -> dict:
     with open(DATA_DIR / "shoreline.geojson", encoding="utf-8") as f:
         return json.load(f)
 
 
+@lru_cache(maxsize=1)
 def load_shoreline():
     """Load coastline used for shore-distance risk components."""
     geojson = load_shoreline_geojson()
@@ -58,6 +73,7 @@ def load_shoreline():
     return unary_union(lines)
 
 
+@lru_cache(maxsize=1)
 def load_water_polygon():
     """Union of all water zone polygons as a single Shapely geometry."""
     geojson = load_zones_geojson()
@@ -73,24 +89,16 @@ def load_zone_polygons() -> list[tuple[str, any]]:
     ]
 
 
+@lru_cache(maxsize=1)
+def _north_zone_union():
+    return unary_union([p for name, p in load_zone_polygons() if name == "north"])
+
+
 def classify_cells_by_zone(lats: np.ndarray, lons: np.ndarray) -> np.ndarray:
-    """Assign each grid cell to 'N' (north) or 'S' (south) zone.
-
-    Uses the zone polygons; cells that fall in a 'north' polygon get 'N',
-    everything else gets 'S'.
-    """
-    from shapely.geometry import Point
-    from shapely.prepared import prep as sprep
-
-    zone_polys = load_zone_polygons()
-    north_polys = [p for name, p in zone_polys if name == "north"]
-    north = unary_union(north_polys)
-    north_prep = sprep(north)
-
-    result = np.empty(len(lats), dtype="U1")
-    for i in range(len(lats)):
-        result[i] = "N" if north_prep.contains(Point(lons[i], lats[i])) else "S"
-    return result
+    """Assign each grid cell to 'N' (north) or 'S' (south) zone."""
+    north = _north_zone_union()
+    in_north = contains_xy(north, np.asarray(lons), np.asarray(lats))
+    return np.where(in_north, "N", "S").astype("U1")
 
 
 def get_passage_coords() -> list[tuple[float, float]]:

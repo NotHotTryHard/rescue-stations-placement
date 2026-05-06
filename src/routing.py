@@ -27,15 +27,9 @@ def compute_travel_times(
         Travel time in minutes from each source to each cell.
         np.inf for unreachable cells.
     """
-    n_cells = graph.shape[0]
-    n_sources = len(source_indices)
-    times = np.full((n_sources, n_cells), np.inf, dtype=np.float64)
-
-    for i, (src_idx, speed) in enumerate(zip(source_indices, speeds_kmh)):
-        # Dijkstra returns distances in the same units as graph weights (meters)
-        dist = dijkstra(graph, indices=src_idx, directed=False)
-        # Convert meters to minutes: dist_m / (speed_km/h * 1000 / 60)
-        speed_m_per_min = speed * 1000.0 / 60.0
-        times[i] = dist / speed_m_per_min
-
-    return times
+    sources = np.asarray(source_indices, dtype=np.int64)
+    speeds = np.asarray(speeds_kmh, dtype=np.float64)
+    # One batched Dijkstra call: returns (len(sources), n_cells) in meters
+    dist = dijkstra(graph, indices=sources, directed=False)
+    speed_m_per_min = speeds * (1000.0 / 60.0)
+    return dist / speed_m_per_min[:, None]
