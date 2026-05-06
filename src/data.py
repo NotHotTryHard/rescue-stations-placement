@@ -68,12 +68,12 @@ def load_water_polygon():
 def load_zone_polygons() -> list[tuple[str, any]]:
     """List of (zone_name, shapely_polygon) pairs."""
     geojson = load_zones_geojson()
-    return [(f["properties"]["zone"], shape(f["geometry"])) for f in geojson["features"]]
+    return [
+        (f["properties"]["zone"], shape(f["geometry"])) for f in geojson["features"]
+    ]
 
 
-def classify_cells_by_zone(
-    lats: np.ndarray, lons: np.ndarray
-) -> np.ndarray:
+def classify_cells_by_zone(lats: np.ndarray, lons: np.ndarray) -> np.ndarray:
     """Assign each grid cell to 'N' (north) or 'S' (south) zone.
 
     Uses the zone polygons; cells that fall in a 'north' polygon get 'N',
