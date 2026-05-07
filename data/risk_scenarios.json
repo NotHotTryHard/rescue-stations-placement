@@ -641,11 +641,11 @@
     "scenarios": [
       {
         "name": "summer",
-        "weight": 0.6
+        "weight": 0.4
       },
       {
         "name": "winter",
-        "weight": 0.4
+        "weight": 0.6
       }
     ]
   }

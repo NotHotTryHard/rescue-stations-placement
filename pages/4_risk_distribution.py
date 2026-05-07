@@ -245,20 +245,9 @@ layers.extend(
     ]
 )
 
-view = pdk.ViewState(latitude=60.00, longitude=29.85, zoom=10, pitch=0)
-st.pydeck_chart(
-    pdk.Deck(
-        layers=layers,
-        initial_view_state=view,
-        tooltip={"text": "lambda: {lambda_value}\nQ: {probability_pct}%"},
-        map_style=get_config_value("map_style"),
-        api_keys={"mapbox": MAPBOX_TOKEN},
-    ),
-    height=800,
-)
-
 if show_hex_towers:
     st.subheader("3D-профиль модельного риска")
+    st.caption("Камеру можно вращать: Shift + стрелки.")
     hex_data = _hex_tower_data(
         lats,
         lons,
@@ -319,6 +308,19 @@ if show_hex_towers:
         ),
         height=760,
     )
+
+view = pdk.ViewState(latitude=60.00, longitude=29.85, zoom=10, pitch=0)
+st.subheader("Плоская карта плотности")
+st.pydeck_chart(
+    pdk.Deck(
+        layers=layers,
+        initial_view_state=view,
+        tooltip={"text": "lambda: {lambda_value}\nQ: {probability_pct}%"},
+        map_style=get_config_value("map_style"),
+        api_keys={"mapbox": MAPBOX_TOKEN},
+    ),
+    height=800,
+)
 
 rows = weighted_coverage_at_thresholds(min_times, dist.weights, [5, 10, 15, 20, 25, 30])
 st.subheader("Покрытие по модельному риску")
