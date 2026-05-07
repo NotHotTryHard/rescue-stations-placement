@@ -10,7 +10,13 @@ Public API:
 """
 
 from .algorithms import Solution, greedy, greedy_then_swap, local_swap
-from .candidates import sample_shore_candidates, sample_shore_points
+from .candidates import (
+    sample_kronshtadt_candidates,
+    sample_kronshtadt_points,
+    sample_mainland_candidates,
+    sample_mainland_points,
+    sample_shore_candidates,
+)
 from .objective import (
     SeparableObjective,
     expected_failure,
@@ -29,7 +35,10 @@ __all__ = [
     "from_stations",
     "attach_travel_times",
     "sample_shore_candidates",
-    "sample_shore_points",
+    "sample_mainland_candidates",
+    "sample_mainland_points",
+    "sample_kronshtadt_candidates",
+    "sample_kronshtadt_points",
     "Problem",
     "Solution",
     "greedy",

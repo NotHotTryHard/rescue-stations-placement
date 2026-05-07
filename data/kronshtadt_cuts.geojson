@@ -1,0 +1,38 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {"name": "north-east ear cut"},
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [29.761036841326387, 60.021661076922044],
+          [29.762484232397355, 60.01903326732494]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {"name": "south-west ear cut"},
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [29.686663466388694, 59.993833135687055],
+          [29.70662355596363, 59.989413501298884]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {"name": "first northern port"},
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [29.743139525632785, 60.02137813492695],
+          [29.746746668132545, 60.02145744067599]
+        ]
+      }
+    }
+  ]
+}

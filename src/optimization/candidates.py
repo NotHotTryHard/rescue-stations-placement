@@ -1,4 +1,14 @@
-"""Sample candidate placements along the shore (boundary of water polygons)."""
+"""Sample candidate placements along the mainland shore and the Kronshtadt outline.
+
+Two physical sources:
+- Mainland coast — `load_shoreline()` (curated north + south mainland LineStrings).
+- Kronshtadt outline — `load_kronshtadt_outline()` (extracted from zone outer rings
+  inside the Kronshtadt bbox; includes adjacent КЗС causeway segments).
+
+`sample_shore_candidates` returns the union of both. Other water-boundary points
+(small islands, the dam outside Kronshtadt) are intentionally excluded — placing a
+rescue station there is not physically meaningful.
+"""
 
 from typing import Sequence
 
@@ -7,13 +17,16 @@ from scipy.sparse import csr_matrix
 from shapely.geometry import LineString, MultiLineString
 from shapely.ops import transform
 
-from ..data import load_water_polygon
+from ..data import load_kronshtadt_outline, load_shoreline
 from ..grid import METERS_PER_DEG_LAT, METERS_PER_DEG_LON
 from .placement import PlacementSet, attach_travel_times
 
 
 def _to_meters(geom):
-    return transform(lambda lon, lat, z=None: (lon * METERS_PER_DEG_LON, lat * METERS_PER_DEG_LAT), geom)
+    return transform(
+        lambda lon, lat, z=None: (lon * METERS_PER_DEG_LON, lat * METERS_PER_DEG_LAT),
+        geom,
+    )
 
 
 def _from_meters(x: float, y: float) -> tuple[float, float]:
@@ -33,22 +46,21 @@ def _iter_linestrings(geom) -> list[LineString]:
     raise TypeError(f"unsupported boundary geometry: {type(geom).__name__}")
 
 
-def sample_shore_points(step_m: float = 300.0) -> tuple[np.ndarray, np.ndarray]:
-    """Walk along the water boundary in local meters and sample every `step_m`.
-
-    Returns (lats, lons). Includes outer shores AND interior holes (Кронштадт).
-    """
+def _sample_along(
+    geom,
+    step_m: float,
+    min_segment_m: float = 200.0,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Walk every linestring in `geom` (lon/lat) and emit a point every step_m meters."""
     if step_m <= 0:
         raise ValueError("step_m must be positive")
 
-    water = load_water_polygon()
-    boundary_m = _to_meters(water.boundary)
-
+    geom_m = _to_meters(geom)
     lats: list[float] = []
     lons: list[float] = []
-    for line in _iter_linestrings(boundary_m):
+    for line in _iter_linestrings(geom_m):
         L = line.length
-        if L <= 0:
+        if L < min_segment_m:
             continue
         n_steps = max(1, int(np.floor(L / step_m)))
         for k in range(n_steps):
@@ -56,8 +68,107 @@ def sample_shore_points(step_m: float = 300.0) -> tuple[np.ndarray, np.ndarray]:
             la, lo = _from_meters(pt.x, pt.y)
             lats.append(la)
             lons.append(lo)
-
     return np.asarray(lats, dtype=np.float64), np.asarray(lons, dtype=np.float64)
+
+
+def sample_mainland_points(step_m: float = 300.0) -> tuple[np.ndarray, np.ndarray]:
+    """Sample the mainland (`shoreline.geojson`) at constant arclength."""
+    return _sample_along(load_shoreline(), step_m=step_m)
+
+
+def sample_kronshtadt_points(step_m: float = 300.0) -> tuple[np.ndarray, np.ndarray]:
+    """Sample the Kronshtadt outline (extracted from zone outer rings)."""
+    return _sample_along(load_kronshtadt_outline(), step_m=step_m)
+
+
+def _build(
+    *,
+    lat: np.ndarray,
+    lon: np.ndarray,
+    speed_kmh: float,
+    label_prefix: str,
+    graph: csr_matrix,
+    grid_lats: np.ndarray,
+    grid_lons: np.ndarray,
+    exclude_grid_indices: Sequence[int],
+) -> PlacementSet:
+    speed = np.full(len(lat), float(speed_kmh), dtype=np.float64)
+    labels = [f"{label_prefix}_{i:04d}" for i in range(len(lat))]
+    placements = attach_travel_times(
+        lat=lat, lon=lon, speed_kmh=speed, labels=labels,
+        graph=graph, grid_lats=grid_lats, grid_lons=grid_lons,
+    )
+    if len(exclude_grid_indices):
+        excl = {int(i) for i in exclude_grid_indices}
+        keep = np.array([int(i) not in excl for i in placements.grid_index], dtype=bool)
+        placements = _select(placements, keep)
+    # Dedupe candidates that snapped to the same grid cell — keep first
+    _, first_idx = np.unique(placements.grid_index, return_index=True)
+    first_idx = np.sort(first_idx)
+    if len(first_idx) != placements.K:
+        placements = _select_by_index(placements, first_idx)
+    return placements
+
+
+def _select(p: PlacementSet, mask: np.ndarray) -> PlacementSet:
+    return PlacementSet(
+        lat=p.lat[mask], lon=p.lon[mask], speed_kmh=p.speed_kmh[mask],
+        grid_index=p.grid_index[mask], travel_times=p.travel_times[mask],
+        labels=[lbl for lbl, k in zip(p.labels, mask) if k],
+    )
+
+
+def _select_by_index(p: PlacementSet, idx: np.ndarray) -> PlacementSet:
+    return PlacementSet(
+        lat=p.lat[idx], lon=p.lon[idx], speed_kmh=p.speed_kmh[idx],
+        grid_index=p.grid_index[idx], travel_times=p.travel_times[idx],
+        labels=[p.labels[int(i)] for i in idx],
+    )
+
+
+def _concat(a: PlacementSet, b: PlacementSet) -> PlacementSet:
+    return PlacementSet(
+        lat=np.concatenate([a.lat, b.lat]),
+        lon=np.concatenate([a.lon, b.lon]),
+        speed_kmh=np.concatenate([a.speed_kmh, b.speed_kmh]),
+        grid_index=np.concatenate([a.grid_index, b.grid_index]),
+        travel_times=np.concatenate([a.travel_times, b.travel_times], axis=0),
+        labels=list(a.labels) + list(b.labels),
+    )
+
+
+def sample_mainland_candidates(
+    *,
+    step_m: float = 300.0,
+    speed_kmh: float = 40.0,
+    graph: csr_matrix,
+    grid_lats: np.ndarray,
+    grid_lons: np.ndarray,
+    exclude_grid_indices: Sequence[int] = (),
+) -> PlacementSet:
+    lat, lon = sample_mainland_points(step_m=step_m)
+    return _build(
+        lat=lat, lon=lon, speed_kmh=speed_kmh, label_prefix="main",
+        graph=graph, grid_lats=grid_lats, grid_lons=grid_lons,
+        exclude_grid_indices=exclude_grid_indices,
+    )
+
+
+def sample_kronshtadt_candidates(
+    *,
+    step_m: float = 300.0,
+    speed_kmh: float = 40.0,
+    graph: csr_matrix,
+    grid_lats: np.ndarray,
+    grid_lons: np.ndarray,
+    exclude_grid_indices: Sequence[int] = (),
+) -> PlacementSet:
+    lat, lon = sample_kronshtadt_points(step_m=step_m)
+    return _build(
+        lat=lat, lon=lon, speed_kmh=speed_kmh, label_prefix="kron",
+        graph=graph, grid_lats=grid_lats, grid_lons=grid_lons,
+        exclude_grid_indices=exclude_grid_indices,
+    )
 
 
 def sample_shore_candidates(
@@ -69,41 +180,16 @@ def sample_shore_candidates(
     grid_lons: np.ndarray,
     exclude_grid_indices: Sequence[int] = (),
 ) -> PlacementSet:
-    """Sample shore candidates and attach precomputed travel times."""
-    lat, lon = sample_shore_points(step_m=step_m)
-    speed = np.full(len(lat), float(speed_kmh), dtype=np.float64)
-    labels = [f"shore_{i:04d}" for i in range(len(lat))]
-
-    placements = attach_travel_times(
-        lat=lat, lon=lon, speed_kmh=speed, labels=labels,
+    """Mainland coast + Kronshtadt outline, both at the same `step_m`."""
+    mainland = sample_mainland_candidates(
+        step_m=step_m, speed_kmh=speed_kmh,
         graph=graph, grid_lats=grid_lats, grid_lons=grid_lons,
+        exclude_grid_indices=exclude_grid_indices,
     )
-
-    # Drop candidates that snap onto a cell already occupied by an existing station
-    if len(exclude_grid_indices):
-        excl = set(int(i) for i in exclude_grid_indices)
-        keep = np.array([int(i) not in excl for i in placements.grid_index], dtype=bool)
-        if not keep.all():
-            placements = PlacementSet(
-                lat=placements.lat[keep],
-                lon=placements.lon[keep],
-                speed_kmh=placements.speed_kmh[keep],
-                grid_index=placements.grid_index[keep],
-                travel_times=placements.travel_times[keep],
-                labels=[lbl for lbl, k in zip(placements.labels, keep) if k],
-            )
-
-    # Deduplicate candidates that snapped to the same grid cell — keep first
-    _, first_idx = np.unique(placements.grid_index, return_index=True)
-    first_idx = np.sort(first_idx)
-    if len(first_idx) != placements.K:
-        placements = PlacementSet(
-            lat=placements.lat[first_idx],
-            lon=placements.lon[first_idx],
-            speed_kmh=placements.speed_kmh[first_idx],
-            grid_index=placements.grid_index[first_idx],
-            travel_times=placements.travel_times[first_idx],
-            labels=[placements.labels[i] for i in first_idx],
-        )
-
-    return placements
+    kron = sample_kronshtadt_candidates(
+        step_m=step_m, speed_kmh=speed_kmh,
+        graph=graph, grid_lats=grid_lats, grid_lons=grid_lons,
+        exclude_grid_indices=tuple(int(i) for i in exclude_grid_indices)
+        + tuple(int(i) for i in mainland.grid_index),
+    )
+    return _concat(mainland, kron)
