@@ -228,44 +228,56 @@
         "name": "shore",
         "title": "Близость к берегу",
         "kind": "shore_distance",
-        "weight": 0.0,
-        "sigma_m": 1000
+        "weight": 0.15,
+        "sigma_m": 1400
       },
       {
         "name": "population",
         "title": "Населенные пункты и береговая инфраструктура",
         "kind": "gaussian_mixture",
-        "weight": 0.0,
+        "weight": 0.25,
         "kernels": [
+          {
+            "lat": 59.982,
+            "lon": 30.220,
+            "weight": 2.2,
+            "sigma_m": 5200
+          },
+          {
+            "lat": 59.993,
+            "lon": 30.130,
+            "weight": 1.2,
+            "sigma_m": 4200
+          },
           {
             "lat": 59.998,
             "lon": 29.766,
-            "weight": 1.0,
-            "sigma_m": 2700
-          },
-          {
-            "lat": 60.093,
-            "lon": 29.958,
-            "weight": 0.9,
-            "sigma_m": 2800
+            "weight": 1.35,
+            "sigma_m": 4000
           },
           {
             "lat": 59.916,
             "lon": 29.772,
+            "weight": 0.9,
+            "sigma_m": 3800
+          },
+          {
+            "lat": 59.885,
+            "lon": 29.930,
+            "weight": 0.85,
+            "sigma_m": 4800
+          },
+          {
+            "lat": 60.093,
+            "lon": 29.958,
+            "weight": 1.15,
+            "sigma_m": 4500
+          },
+          {
+            "lat": 60.170,
+            "lon": 29.780,
             "weight": 0.8,
-            "sigma_m": 2600
-          },
-          {
-            "lat": 59.884,
-            "lon": 29.908,
-            "weight": 0.7,
-            "sigma_m": 2600
-          },
-          {
-            "lat": 59.982,
-            "lon": 30.22,
-            "weight": 1.1,
-            "sigma_m": 3200
+            "sigma_m": 5200
           }
         ]
       },
@@ -273,7 +285,7 @@
         "name": "fishing",
         "title": "Популярные районы зимней рыбалки",
         "kind": "anisotropic_gaussian_mixture",
-        "weight": 1,
+        "weight": 0.6,
         "kernels": [
           {
             "lat": 60.122285,
