@@ -11,14 +11,26 @@ from src.grid import METERS_PER_DEG_LAT, METERS_PER_DEG_LON
 from src.session import get_results, get_risk_distribution, sidebar_controls
 
 
-def _scaled_values(values: np.ndarray, log_scale: bool) -> np.ndarray:
+def _log_scale_factor(scenario: str) -> float:
+    return 2999.0 if scenario == "winter" else 9.0
+
+
+def _default_hex_elevation_scale(scenario: str) -> int:
+    return 10000 if scenario == "winter" else 4000
+
+
+def _max_hex_elevation_scale(scenario: str) -> int:
+    return 20000 if scenario == "winter" else 10000
+
+
+def _scaled_values(values: np.ndarray, log_scale: bool, log_factor: float) -> np.ndarray:
     values = np.asarray(values, dtype=np.float64)
     max_value = values.max()
     if max_value <= 0:
         return np.zeros_like(values)
     ratios = values / max_value
     if log_scale:
-        return np.log1p(ratios * 9.0) / np.log1p(9.0)
+        return np.log1p(ratios * log_factor) / np.log1p(log_factor)
     return ratios
 
 
@@ -64,6 +76,7 @@ def _hex_tower_data(
     radius_m: float,
     elevation_scale: float,
     log_scale: bool,
+    log_factor: float,
 ) -> list[dict]:
     size = float(radius_m)
     bins: dict[tuple[int, int], list[float]] = {}
@@ -101,7 +114,7 @@ def _hex_tower_data(
         center_y = origin_y + size * np.sqrt(3.0) * (r + q / 2.0)
         color_value = relative_probability_mean
         if log_scale:
-            color_value = np.log1p(relative_probability_mean * 9.0) / np.log1p(9.0)
+            color_value = np.log1p(relative_probability_mean * log_factor) / np.log1p(log_factor)
         towers.append(
             {
                 "polygon": _hex_polygon(center_x, center_y, size),
@@ -139,13 +152,20 @@ sample_size = st.sidebar.slider("Число сэмплов", 50, 2000, 400, 50)
 sample_seed = st.sidebar.number_input("Seed", value=1, step=1)
 show_hex_towers = st.sidebar.checkbox("3D-гексагоны риска", value=True)
 hex_radius = st.sidebar.slider("Радиус 3D-гексагона (м)", 150, 1200, 350, 50)
-hex_elevation_scale = st.sidebar.slider("Масштаб высоты 3D", 300, 8000, 2800, 100)
+hex_elevation_scale = st.sidebar.slider(
+    "Масштаб высоты 3D",
+    300,
+    _max_hex_elevation_scale(cfg["risk_scenario"]),
+    _default_hex_elevation_scale(cfg["risk_scenario"]),
+    100,
+)
 hex_pitch = st.sidebar.slider("Начальный наклон 3D-карты", 0, 85, 55, 5)
 
 lats, lons, _, min_times, _ = get_results()
 dist = get_risk_distribution()
 
-plot_values = _scaled_values(dist.lambda_values, log_scale=log_scale)
+log_factor = _log_scale_factor(cfg["risk_scenario"])
+plot_values = _scaled_values(dist.lambda_values, log_scale=log_scale, log_factor=log_factor)
 
 covered_risk = (
     dist.probability(np.isfinite(min_times) & (min_times <= coverage_threshold)) * 100
@@ -246,6 +266,7 @@ if show_hex_towers:
         radius_m=float(hex_radius),
         elevation_scale=float(hex_elevation_scale),
         log_scale=log_scale,
+        log_factor=log_factor,
     )
     hex_layers = [
         pdk.Layer(
