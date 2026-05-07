@@ -8,7 +8,7 @@
         "name": "fairway",
         "title": "Фарватеры и судоходные пути",
         "kind": "line_distance",
-        "weight": 0.5,
+        "weight": 0.25,
         "lines": [
           {
             "name": "Большой Корабельный фарватер",
@@ -88,31 +88,37 @@
         "name": "shore",
         "title": "Близость к берегу",
         "kind": "shore_distance",
-        "weight": 0.2,
-        "sigma_m": 300
+        "weight": 0.1,
+        "sigma_m": 450
       },
       {
         "name": "ports",
         "title": "Порты и гавани",
         "kind": "gaussian_mixture",
-        "weight": 0.0,
+        "weight": 0.25,
         "kernels": [
+          {
+            "lat": 59.900,
+            "lon": 30.220,
+            "weight": 1.4,
+            "sigma_m": 2600
+          },
+          {
+            "lat": 59.951,
+            "lon": 30.185,
+            "weight": 1.1,
+            "sigma_m": 1900
+          },
+          {
+            "lat": 59.912,
+            "lon": 29.770,
+            "weight": 1.15,
+            "sigma_m": 2500
+          },
           {
             "lat": 59.996,
             "lon": 29.765,
             "weight": 1.0,
-            "sigma_m": 1700
-          },
-          {
-            "lat": 59.912,
-            "lon": 29.77,
-            "weight": 0.8,
-            "sigma_m": 1800
-          },
-          {
-            "lat": 59.895,
-            "lon": 30.22,
-            "weight": 1.1,
             "sigma_m": 2200
           }
         ]
@@ -121,31 +127,43 @@
         "name": "recreation",
         "title": "Рекреационные зоны",
         "kind": "gaussian_mixture",
-        "weight": 0.0,
+        "weight": 0.18,
         "kernels": [
+          {
+            "lat": 60.170,
+            "lon": 29.780,
+            "weight": 1.15,
+            "sigma_m": 6200
+          },
           {
             "lat": 60.095,
             "lon": 29.955,
-            "weight": 1.0,
-            "sigma_m": 2400
+            "weight": 1.1,
+            "sigma_m": 4600
           },
           {
-            "lat": 60.016,
-            "lon": 30.02,
-            "weight": 0.8,
-            "sigma_m": 2200
+            "lat": 59.993,
+            "lon": 30.130,
+            "weight": 0.9,
+            "sigma_m": 3600
+          },
+          {
+            "lat": 59.998,
+            "lon": 29.766,
+            "weight": 0.7,
+            "sigma_m": 3200
           },
           {
             "lat": 59.885,
-            "lon": 29.91,
-            "weight": 0.8,
-            "sigma_m": 2200
+            "lon": 29.930,
+            "weight": 0.9,
+            "sigma_m": 4600
           },
           {
-            "lat": 59.86,
-            "lon": 30.04,
+            "lat": 59.860,
+            "lon": 30.045,
             "weight": 0.7,
-            "sigma_m": 2200
+            "sigma_m": 3600
           }
         ]
       },
@@ -153,37 +171,49 @@
         "name": "population",
         "title": "Населенные пункты и береговая инфраструктура",
         "kind": "gaussian_mixture",
-        "weight": 0.3,
+        "weight": 0.22,
         "kernels": [
+          {
+            "lat": 59.982,
+            "lon": 30.220,
+            "weight": 2.4,
+            "sigma_m": 5600
+          },
+          {
+            "lat": 59.993,
+            "lon": 30.130,
+            "weight": 1.25,
+            "sigma_m": 4200
+          },
           {
             "lat": 59.998,
             "lon": 29.766,
-            "weight": 1.0,
-            "sigma_m": 2500
-          },
-          {
-            "lat": 60.093,
-            "lon": 29.958,
-            "weight": 0.8,
-            "sigma_m": 2600
+            "weight": 1.35,
+            "sigma_m": 3600
           },
           {
             "lat": 59.916,
             "lon": 29.772,
+            "weight": 0.9,
+            "sigma_m": 3600
+          },
+          {
+            "lat": 59.885,
+            "lon": 29.930,
+            "weight": 0.9,
+            "sigma_m": 4600
+          },
+          {
+            "lat": 60.093,
+            "lon": 29.958,
+            "weight": 1.05,
+            "sigma_m": 4300
+          },
+          {
+            "lat": 60.170,
+            "lon": 29.780,
             "weight": 0.8,
-            "sigma_m": 2500
-          },
-          {
-            "lat": 59.884,
-            "lon": 29.908,
-            "weight": 0.7,
-            "sigma_m": 2500
-          },
-          {
-            "lat": 59.982,
-            "lon": 30.22,
-            "weight": 1.1,
-            "sigma_m": 3000
+            "sigma_m": 5200
           }
         ]
       }
@@ -198,14 +228,14 @@
         "name": "shore",
         "title": "Близость к берегу",
         "kind": "shore_distance",
-        "weight": 0.12,
+        "weight": 0.0,
         "sigma_m": 1000
       },
       {
         "name": "population",
         "title": "Населенные пункты и береговая инфраструктура",
         "kind": "gaussian_mixture",
-        "weight": 0.28,
+        "weight": 0.0,
         "kernels": [
           {
             "lat": 59.998,
@@ -243,7 +273,7 @@
         "name": "fishing",
         "title": "Популярные районы зимней рыбалки",
         "kind": "anisotropic_gaussian_mixture",
-        "weight": 0.6,
+        "weight": 1,
         "kernels": [
           {
             "lat": 60.122285,
