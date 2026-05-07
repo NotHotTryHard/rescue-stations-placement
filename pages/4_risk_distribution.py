@@ -7,6 +7,7 @@ import streamlit as st
 from src.config import MAPBOX_TOKEN, ensure_config, get_config_value
 from src.coverage import weighted_coverage_at_thresholds
 from src.data import load_risk_scenarios, load_stations_raw
+from src.grid import METERS_PER_DEG_LAT, METERS_PER_DEG_LON
 from src.session import get_results, get_risk_distribution, sidebar_controls
 
 
@@ -17,7 +18,7 @@ def _scaled_values(values: np.ndarray, log_scale: bool) -> np.ndarray:
         return np.zeros_like(values)
     ratios = values / max_value
     if log_scale:
-        return np.log1p(ratios * 9999.0) / np.log1p(9999.0)
+        return np.log1p(ratios * 9.0) / np.log1p(9.0)
     return ratios
 
 
@@ -29,6 +30,89 @@ def _risk_color(value: float) -> list[int]:
         int(60 - 45 * v),
         int(80 + 150 * v),
     ]
+
+
+def _hex_round(q: float, r: float) -> tuple[int, int]:
+    x, z = q, r
+    y = -x - z
+    rx, ry, rz = round(x), round(y), round(z)
+
+    dx, dy, dz = abs(rx - x), abs(ry - y), abs(rz - z)
+    if dx > dy and dx > dz:
+        rx = -ry - rz
+    elif dy > dz:
+        ry = -rx - rz
+    else:
+        rz = -rx - ry
+    return int(rx), int(rz)
+
+
+def _hex_polygon(center_x_m: float, center_y_m: float, radius_m: float) -> list[list[float]]:
+    coords = []
+    for angle_deg in (0, 60, 120, 180, 240, 300):
+        angle = np.deg2rad(angle_deg)
+        lon = (center_x_m + radius_m * np.cos(angle)) / METERS_PER_DEG_LON
+        lat = (center_y_m + radius_m * np.sin(angle)) / METERS_PER_DEG_LAT
+        coords.append([float(lon), float(lat)])
+    return coords
+
+
+def _hex_tower_data(
+    lats: np.ndarray,
+    lons: np.ndarray,
+    weights: np.ndarray,
+    radius_m: float,
+    elevation_scale: float,
+    log_scale: bool,
+) -> list[dict]:
+    size = float(radius_m)
+    bins: dict[tuple[int, int], list[float]] = {}
+    probabilities = np.asarray(weights, dtype=np.float64)
+    max_probability = probabilities.max()
+    if max_probability <= 0:
+        return []
+    relative_probabilities = probabilities / max_probability
+
+    xs = np.asarray(lons, dtype=np.float64) * METERS_PER_DEG_LON
+    ys = np.asarray(lats, dtype=np.float64) * METERS_PER_DEG_LAT
+    origin_x = float(xs.min())
+    origin_y = float(ys.min())
+    for x, y, relative_probability, weight in zip(
+        xs, ys, relative_probabilities, probabilities
+    ):
+        rel_x = x - origin_x
+        rel_y = y - origin_y
+        q = (2.0 / 3.0 * rel_x) / size
+        r = (-1.0 / 3.0 * rel_x + np.sqrt(3.0) / 3.0 * rel_y) / size
+        key = _hex_round(q, r)
+        if key not in bins:
+            bins[key] = [0.0, 0.0, 0.0, 0.0, 0.0]
+        bins[key][0] += float(relative_probability)
+        bins[key][1] += float(weight)
+        bins[key][2] += float(x)
+        bins[key][3] += float(y)
+        bins[key][4] += 1.0
+
+    towers = []
+    for (q, r), values in bins.items():
+        count = values[4]
+        relative_probability_mean = values[0] / count
+        center_x = origin_x + size * 1.5 * q
+        center_y = origin_y + size * np.sqrt(3.0) * (r + q / 2.0)
+        color_value = relative_probability_mean
+        if log_scale:
+            color_value = np.log1p(relative_probability_mean * 9.0) / np.log1p(9.0)
+        towers.append(
+            {
+                "polygon": _hex_polygon(center_x, center_y, size),
+                "elevation": relative_probability_mean * elevation_scale,
+                "color": _risk_color(color_value),
+                "relative_probability": f"{relative_probability_mean:.3f}",
+                "probability_pct": f"{values[1] * 100:.4f}",
+            }
+        )
+
+    return towers
 
 
 st.set_page_config(page_title="Плотность происшествий", layout="wide")
@@ -53,6 +137,10 @@ coverage_threshold = st.sidebar.slider("Порог покрытия риска (
 show_samples = st.sidebar.checkbox("Показывать сэмплы происшествий", value=True)
 sample_size = st.sidebar.slider("Число сэмплов", 50, 2000, 400, 50)
 sample_seed = st.sidebar.number_input("Seed", value=1, step=1)
+show_hex_towers = st.sidebar.checkbox("3D-гексагоны риска", value=True)
+hex_radius = st.sidebar.slider("Радиус 3D-гексагона (м)", 150, 1200, 350, 50)
+hex_elevation_scale = st.sidebar.slider("Масштаб высоты 3D", 300, 8000, 2800, 100)
+hex_pitch = st.sidebar.slider("Начальный наклон 3D-карты", 0, 85, 55, 5)
 
 lats, lons, _, min_times, _ = get_results()
 dist = get_risk_distribution()
@@ -148,6 +236,68 @@ st.pydeck_chart(
     ),
     height=800,
 )
+
+if show_hex_towers:
+    st.subheader("3D-профиль модельного риска")
+    hex_data = _hex_tower_data(
+        lats,
+        lons,
+        dist.weights,
+        radius_m=float(hex_radius),
+        elevation_scale=float(hex_elevation_scale),
+        log_scale=log_scale,
+    )
+    hex_layers = [
+        pdk.Layer(
+            "PolygonLayer",
+            data=hex_data,
+            get_polygon="polygon",
+            get_fill_color="color",
+            get_elevation="elevation",
+            extruded=True,
+            wireframe=True,
+            pickable=True,
+            opacity=0.78,
+        ),
+        pdk.Layer(
+            "ScatterplotLayer",
+            data=stations_raw,
+            get_position="[lon, lat]",
+            get_color=[0, 0, 0, 255],
+            get_radius=250,
+            pickable=True,
+        ),
+    ]
+    hex_view = pdk.ViewState(
+        latitude=60.00,
+        longitude=29.85,
+        zoom=10,
+        pitch=hex_pitch,
+        bearing=-18,
+    )
+    st.pydeck_chart(
+        pdk.Deck(
+            layers=hex_layers,
+            views=[
+                pdk.View(
+                    type="MapView",
+                    controller={
+                        "dragRotate": True,
+                        "keyboard": True,
+                        "minPitch": 0,
+                        "maxPitch": 85,
+                    },
+                )
+            ],
+            initial_view_state=hex_view,
+            tooltip={
+                "text": "relative Q/cell: {relative_probability}\nQ в гексагоне: {probability_pct}%"
+            },
+            map_style=get_config_value("map_style"),
+            api_keys={"mapbox": MAPBOX_TOKEN},
+        ),
+        height=760,
+    )
 
 rows = weighted_coverage_at_thresholds(min_times, dist.weights, [5, 10, 15, 20, 25, 30])
 st.subheader("Покрытие по модельному риску")
