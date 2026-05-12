@@ -108,12 +108,12 @@ survival_median = 10
 survival_model = "increasing"
 survival_max_time = 30
 show_blind_spots = False
-with sidebar_section("Выживаемость и нормативы"):
+with sidebar_section("Выживаемость в воде"):
     survival_model = st.radio(
         "Критерий выживаемости",
         ("increasing", "exponential"),
         format_func={
-            "increasing": "Растущая интенсивность",
+            "increasing": "Возрастающая интенсивность",
             "exponential": "Экспонента",
         }.get,
         key="survival_model",

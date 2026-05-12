@@ -15,7 +15,7 @@ st.title("Карта достижимости")
 with sidebar_section("Сетка и данные"):
     cell_size = sidebar_controls(st)
 
-with sidebar_section("Выживаемость и нормативы"):
+with sidebar_section("Выживаемость в воде"):
     max_time_display = st.slider(
         "Макс. время на шкале (мин)",
         5,

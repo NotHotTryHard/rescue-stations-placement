@@ -145,7 +145,7 @@ with sidebar_section("Сетка и данные"):
 with sidebar_section("Сценарий риска"):
     risk_scenario_control(cfg, risk_scenarios, container=st)
 
-with sidebar_section("Выживаемость и нормативы"):
+with sidebar_section("Выживаемость в воде"):
     coverage_threshold = st.slider(
         "Норматив для покрытия (мин)",
         5,
