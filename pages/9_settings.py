@@ -135,7 +135,7 @@ if points:
     )
     st.altair_chart(
         chart.configure_axis(grid=True).configure_view(strokeOpacity=0),
-        use_container_width=True,
+        width="stretch",
     )
     st.caption(
         f"Показаны направления вокруг центральной клетки в диапазоне ±{cfg['neighbor_level']}."

@@ -8,7 +8,13 @@ from src.config import MAPBOX_TOKEN, ensure_config, get_config_value
 from src.coverage import weighted_coverage_at_thresholds
 from src.data import load_risk_scenarios, load_stations_raw
 from src.grid import METERS_PER_DEG_LAT, METERS_PER_DEG_LON
-from src.session import get_results, get_risk_distribution, sidebar_controls
+from src.session import (
+    get_results,
+    get_risk_distribution,
+    risk_scenario_control,
+    sidebar_controls,
+    sidebar_section,
+)
 
 
 def _log_scale_factor(scenario: str) -> float:
@@ -133,33 +139,41 @@ st.title("Модельная плотность происшествий")
 
 cfg = ensure_config()
 risk_scenarios = load_risk_scenarios()
-risk_options = list(risk_scenarios)
-current_risk = cfg.get("risk_scenario", "summer")
-if current_risk not in risk_scenarios:
-    current_risk = risk_options[0]
+with sidebar_section("Сетка и данные"):
+    cell_size = sidebar_controls(st)
 
-cell_size = sidebar_controls()
-cfg["risk_scenario"] = st.sidebar.selectbox(
-    "Сценарий",
-    risk_options,
-    index=risk_options.index(current_risk),
-    format_func=lambda key: risk_scenarios[key].get("title", key),
-)
-log_scale = st.sidebar.checkbox("Логарифмическая окраска", value=True)
-coverage_threshold = st.sidebar.slider("Порог покрытия риска (мин)", 5, 40, 20, 1)
-show_samples = st.sidebar.checkbox("Показывать сэмплы происшествий", value=True)
-sample_size = st.sidebar.slider("Число сэмплов", 50, 2000, 400, 50)
-sample_seed = st.sidebar.number_input("Seed", value=1, step=1)
-show_hex_towers = st.sidebar.checkbox("3D-гексагоны риска", value=True)
-hex_radius = st.sidebar.slider("Радиус 3D-гексагона (м)", 150, 1200, 350, 50)
-hex_elevation_scale = st.sidebar.slider(
-    "Масштаб высоты 3D",
-    300,
-    _max_hex_elevation_scale(cfg["risk_scenario"]),
-    _default_hex_elevation_scale(cfg["risk_scenario"]),
-    100,
-)
-hex_pitch = st.sidebar.slider("Начальный наклон 3D-карты", 0, 85, 55, 5)
+with sidebar_section("Сценарий риска"):
+    risk_scenario_control(cfg, risk_scenarios, container=st)
+
+with sidebar_section("Выживаемость и нормативы"):
+    coverage_threshold = st.slider(
+        "Норматив для покрытия (мин)",
+        5,
+        40,
+        15,
+        1,
+        key="coverage_threshold_min",
+    )
+
+with sidebar_section("Визуализация"):
+    log_scale = st.checkbox("Логарифмическая окраска", value=True)
+
+with sidebar_section("Сэмплы происшествий"):
+    show_samples = st.checkbox("Показывать сэмплы происшествий", value=True)
+    sample_size = st.slider("Число сэмплов", 50, 2000, 400, 50)
+    sample_seed = st.number_input("Seed", value=1, step=1)
+
+with sidebar_section("3D-профиль"):
+    show_hex_towers = st.checkbox("3D-гексагоны риска", value=True)
+    hex_radius = st.slider("Радиус 3D-гексагона (м)", 150, 1200, 350, 50)
+    hex_elevation_scale = st.slider(
+        "Масштаб высоты 3D",
+        300,
+        _max_hex_elevation_scale(cfg["risk_scenario"]),
+        _default_hex_elevation_scale(cfg["risk_scenario"]),
+        100,
+    )
+    hex_pitch = st.slider("Начальный наклон 3D-карты", 0, 85, 55, 5)
 
 lats, lons, _, min_times, _ = get_results()
 dist = get_risk_distribution()

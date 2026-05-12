@@ -45,16 +45,40 @@ def _compute(cell_size_m: int, neighbor_offsets: list[tuple[int, int]], neighbor
     }
 
 
-def sidebar_controls():
+def sidebar_section(title: str, expanded: bool = True):
+    """Named sidebar group for related page parameters."""
+    return st.sidebar.expander(title, expanded=expanded)
+
+
+def sidebar_controls(container=None):
     """Shared cell size slider. Persists via session_state."""
+    if container is None:
+        container = st.sidebar
     if "cell_size" not in st.session_state:
         st.session_state["cell_size"] = 200
-    val = st.sidebar.slider(
+    val = container.slider(
         "Размер ячейки (м)", 40, 1000,
         value=st.session_state["cell_size"], step=20,
     )
     st.session_state["cell_size"] = val
     return val
+
+
+def risk_scenario_control(cfg: dict, scenarios: dict, label: str = "Сценарий", container=None):
+    """Shared risk scenario selector. Stores the selected key in cfg."""
+    if container is None:
+        container = st.sidebar
+    options = list(scenarios)
+    current = cfg.get("risk_scenario", "summer")
+    if current not in scenarios:
+        current = options[0]
+    cfg["risk_scenario"] = container.selectbox(
+        label,
+        options,
+        index=options.index(current),
+        format_func=lambda key: scenarios[key].get("title", key),
+    )
+    return cfg["risk_scenario"]
 
 
 def get_results():

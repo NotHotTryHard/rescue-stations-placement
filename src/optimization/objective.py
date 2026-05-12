@@ -65,6 +65,34 @@ def weighted_coverage(weights: np.ndarray, threshold_min: float) -> SeparableObj
     return SeparableObjective(weights=weights, phi=phi, name=f"-coverage(T={T:g})")
 
 
+def survival_exponential(median_min: float) -> Callable[[np.ndarray], np.ndarray]:
+    """Exponential survival curve with constant hazard and S(median)=0.5."""
+    median = max(float(median_min), 1e-9)
+    lam = np.log(2.0) / median
+    return lambda t: np.exp(-lam * np.asarray(t, dtype=np.float64))
+
+
+def survival_increasing_intensity(
+    median_min: float,
+    max_time_min: float,
+) -> Callable[[np.ndarray], np.ndarray]:
+    """Survival curve with increasing hazard and S(max_time)=0."""
+    median = max(float(median_min), 1e-9)
+    max_time = max(float(max_time_min), median + 1e-9)
+    scale = np.log(2.0) * (max_time - median) / (median * median)
+
+    def survival(t):
+        values = np.asarray(t, dtype=np.float64)
+        out = np.zeros_like(values)
+        active = values < max_time
+        clipped = np.maximum(values[active], 0.0)
+        hazard = scale * clipped * clipped / np.maximum(max_time - clipped, 1e-9)
+        out[active] = np.exp(-hazard)
+        return out
+
+    return survival
+
+
 def expected_failure(weights: np.ndarray, survival: Callable[[np.ndarray], np.ndarray]) -> SeparableObjective:
     """E[1 - S(T)]. Survival must satisfy S(0)=1, monotone decreasing, S(inf)=0."""
 

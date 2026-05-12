@@ -32,13 +32,9 @@ from src.optimization import (
     greedy_then_swap,
     mean_response_time,
     sample_shore_candidates,
+    survival_increasing_intensity,
     weighted_coverage,
 )
-
-
-def survival_exponential(median_min: float = 10.0):
-    lam = np.log(2.0) / median_min  # S(median) = 1/2
-    return lambda t: np.exp(-lam * t)
 
 
 def stage(label: str, fn, *args, **kwargs):
@@ -100,7 +96,10 @@ def main():
     objectives = {
         "mean_time": mean_response_time(dist.weights, t_cap_min=120.0),
         "coverage_15min": weighted_coverage(dist.weights, threshold_min=15.0),
-        "expected_failure": expected_failure(dist.weights, survival_exponential(10.0)),
+        "expected_failure": expected_failure(
+            dist.weights,
+            survival_increasing_intensity(median_min=10.0, max_time_min=30.0),
+        ),
     }
 
     print()

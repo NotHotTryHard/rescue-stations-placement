@@ -21,6 +21,8 @@ from .objective import (
     SeparableObjective,
     expected_failure,
     mean_response_time,
+    survival_exponential,
+    survival_increasing_intensity,
     weighted_coverage,
 )
 from .placement import PlacementSet, attach_travel_times, from_stations
@@ -31,6 +33,8 @@ __all__ = [
     "mean_response_time",
     "weighted_coverage",
     "expected_failure",
+    "survival_exponential",
+    "survival_increasing_intensity",
     "PlacementSet",
     "from_stations",
     "attach_travel_times",

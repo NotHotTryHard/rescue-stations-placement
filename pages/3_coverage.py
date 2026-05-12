@@ -5,13 +5,14 @@ import pydeck as pdk
 
 from src.data import load_stations_raw
 from src.config import get_config_value, MAPBOX_TOKEN
-from src.session import sidebar_controls, get_results
+from src.session import sidebar_controls, sidebar_section, get_results
 from src.coverage import coverage_at_thresholds, station_zones
 
 st.set_page_config(page_title="Зоны ответственности", layout="wide")
 st.title("Зоны ответственности")
 
-cell_size = sidebar_controls()
+with sidebar_section("Сетка и данные"):
+    cell_size = sidebar_controls(st)
 
 lats, lons, travel, min_times, stations = get_results()
 stations_raw = load_stations_raw()

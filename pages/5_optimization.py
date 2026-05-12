@@ -22,9 +22,17 @@ from src.optimization import (
     greedy_then_swap,
     mean_response_time,
     sample_shore_candidates,
+    survival_exponential,
+    survival_increasing_intensity,
     weighted_coverage,
 )
-from src.session import get_results, get_risk_distribution, sidebar_controls
+from src.session import (
+    get_results,
+    get_risk_distribution,
+    risk_scenario_control,
+    sidebar_controls,
+    sidebar_section,
+)
 
 st.set_page_config(page_title="Оптимизация размещения", layout="wide")
 st.title("Оптимизация: доразмещение станций")
@@ -70,42 +78,86 @@ def _build_existing(cell_size_m: int, neighbor_offsets_sig: tuple):
 
 # --- Sidebar ---
 cfg = ensure_config()
-cell_size = sidebar_controls()
-
 risk_scenarios = load_risk_scenarios()
-risk_options = list(risk_scenarios)
-current_risk = cfg.get("risk_scenario", "summer")
-if current_risk not in risk_scenarios:
-    current_risk = risk_options[0]
-cfg["risk_scenario"] = st.sidebar.selectbox(
-    "Сценарий",
-    risk_options,
-    index=risk_options.index(current_risk),
-    format_func=lambda key: risk_scenarios[key].get("title", key),
-)
 
-m = st.sidebar.slider("Сколько станций добавить (m)", 1, 8, 2)
-shore_step = st.sidebar.slider("Шаг кандидатов вдоль берега (м)", 200, 2000, 500, 100)
-candidate_speed = st.sidebar.slider("Скорость новых станций (км/ч)", 20, 80, 40, 5)
+with sidebar_section("Сетка и данные"):
+    cell_size = sidebar_controls(st)
 
-objective_choice = st.sidebar.radio(
-    "Критерий оптимизации",
-    ("mean_time", "coverage", "expected_failure"),
-    format_func={
-        "mean_time": "Среднее время прибытия",
-        "coverage": "Покрытие за норматив",
-        "expected_failure": "Ожидаемая невыживаемость",
-    }.get,
-)
-coverage_T = st.sidebar.slider("Норматив для покрытия (мин)", 5, 40, 15, 1)
-survival_median = st.sidebar.slider("Медиана выживаемости (мин)", 3, 30, 10, 1)
-t_cap = st.sidebar.slider("Cap на время для среднего (мин)", 30, 240, 120, 10)
+with sidebar_section("Сценарий риска"):
+    risk_scenario_control(cfg, risk_scenarios, container=st)
 
-algorithm_choice = st.sidebar.radio(
-    "Алгоритм",
-    ("greedy", "greedy_then_swap"),
-    format_func={"greedy": "Жадный", "greedy_then_swap": "Жадный + 1-swap"}.get,
-)
+with sidebar_section("Кандидаты"):
+    m = st.slider("Сколько станций добавить (m)", 1, 8, 2)
+    shore_step = st.slider("Шаг кандидатов вдоль берега (м)", 200, 2000, 500, 100)
+    candidate_speed = st.slider("Скорость новых станций (км/ч)", 20, 80, 40, 5)
+
+with sidebar_section("Критерий"):
+    objective_choice = st.radio(
+        "Критерий оптимизации",
+        ("mean_time", "coverage", "expected_failure"),
+        format_func={
+            "mean_time": "Среднее время прибытия",
+            "coverage": "Покрытие за норматив",
+            "expected_failure": "Ожидаемая невыживаемость",
+        }.get,
+    )
+
+t_cap = 120
+coverage_T = 15
+survival_median = 10
+survival_model = "increasing"
+survival_max_time = 30
+show_blind_spots = False
+with sidebar_section("Выживаемость и нормативы"):
+    survival_model = st.radio(
+        "Критерий выживаемости",
+        ("increasing", "exponential"),
+        format_func={
+            "increasing": "Растущая интенсивность",
+            "exponential": "Экспонента",
+        }.get,
+        key="survival_model",
+    )
+    survival_median = st.slider(
+        "Медиана выживаемости (мин)",
+        3,
+        30,
+        10,
+        1,
+        key="survival_median_min",
+    )
+    if survival_model == "increasing":
+        min_max_time = int(survival_median) + 1
+        if "survival_max_time_min" not in st.session_state:
+            st.session_state["survival_max_time_min"] = 30
+        if st.session_state.get("survival_max_time_min", 30) < min_max_time:
+            st.session_state["survival_max_time_min"] = min_max_time
+        survival_max_time = st.slider(
+            "Макс. значение выживаемости (мин)",
+            min_max_time,
+            120,
+            key="survival_max_time_min",
+        )
+    coverage_T = st.slider(
+        "Норматив для покрытия (мин)",
+        5,
+        40,
+        15,
+        1,
+        key="coverage_threshold_min",
+    )
+    show_blind_spots = st.checkbox(
+        "Показывать слепые пятна",
+        value=False,
+        key="show_blind_spots",
+    )
+
+with sidebar_section("Алгоритм"):
+    algorithm_choice = st.radio(
+        "Алгоритм",
+        ("greedy", "greedy_then_swap"),
+        format_func={"greedy": "Жадный", "greedy_then_swap": "Жадный + 1-swap"}.get,
+    )
 
 # --- Compute ---
 lats, lons, _, _, _ = get_results()
@@ -126,8 +178,14 @@ elif objective_choice == "coverage":
     objective = weighted_coverage(dist.weights, threshold_min=float(coverage_T))
     fmt = lambda v: f"{-v * 100:+.2f}%"  # show as positive coverage %
 else:
-    lam = np.log(2.0) / float(survival_median)
-    objective = expected_failure(dist.weights, lambda t: np.exp(-lam * t))
+    if survival_model == "exponential":
+        survival = survival_exponential(float(survival_median))
+    else:
+        survival = survival_increasing_intensity(
+            float(survival_median),
+            float(survival_max_time),
+        )
+    objective = expected_failure(dist.weights, survival)
     fmt = lambda v: f"{v * 100:+.2f}%"
 
 problem = Problem(existing=existing, candidates=candidates, objective=objective, m=m)
@@ -171,23 +229,41 @@ candidate_data = [
 stations_raw = load_stations_raw()
 station_charset = '"' + "".join(sorted({ch for s in stations_raw for ch in s["name"]})) + '"'
 
-# Field difference: time saved per cell
-saved = problem.base_field - solution.final_field
-saved_max = max(float(saved.max()), 1e-9)
-field_data = [
-    {
-        "lat": float(lats[j]),
-        "lon": float(lons[j]),
-        "color": [
-            int(60 + 195 * min(saved[j] / saved_max, 1.0)),
-            int(180 - 120 * min(saved[j] / saved_max, 1.0)),
-            int(180 - 120 * min(saved[j] / saved_max, 1.0)),
-            120,
-        ],
-        "saved_min": round(float(saved[j]), 2),
-    }
-    for j in range(len(lats))
-]
+# Field layer: either remaining blind spots or time saved per cell.
+if show_blind_spots:
+    field_data = [
+        {
+            "lat": float(lats[j]),
+            "lon": float(lons[j]),
+            "color": [255, 0, 0, 190],
+            "time_min": (
+                round(float(solution.final_field[j]), 2)
+                if np.isfinite(solution.final_field[j])
+                else "недостижимо"
+            ),
+        }
+        for j in range(len(lats))
+        if not np.isfinite(solution.final_field[j]) or solution.final_field[j] > coverage_T
+    ]
+    field_tooltip = "Время: {time_min} мин\n{label}"
+else:
+    saved = problem.base_field - solution.final_field
+    saved_max = max(float(saved.max()), 1e-9)
+    field_data = [
+        {
+            "lat": float(lats[j]),
+            "lon": float(lons[j]),
+            "color": [
+                int(60 + 195 * min(saved[j] / saved_max, 1.0)),
+                int(180 - 120 * min(saved[j] / saved_max, 1.0)),
+                int(180 - 120 * min(saved[j] / saved_max, 1.0)),
+                120,
+            ],
+            "saved_min": round(float(saved[j]), 2),
+        }
+        for j in range(len(lats))
+    ]
+    field_tooltip = "Сэкономлено: {saved_min} мин\n{label}"
 
 st.pydeck_chart(
     pdk.Deck(
@@ -224,18 +300,24 @@ st.pydeck_chart(
             ),
         ],
         initial_view_state=view,
-        tooltip={"text": "Сэкономлено: {saved_min} мин\n{label}"},
+        tooltip={"text": field_tooltip},
         map_style=map_style,
         api_keys={"mapbox": MAPBOX_TOKEN},
     ),
     height=700,
 )
 
-st.caption(
-    "Чёрные точки — действующие станции. Серые мелкие — кандидаты вдоль берега. "
-    "Зелёные большие — выбранные оптимизатором (число = порядок добавления). "
-    "Заливка ячеек — экономия времени прибытия после доразмещения (тёмно-розовый = больше)."
-)
+if show_blind_spots:
+    st.caption(
+        "Чёрные точки — действующие станции. Серые мелкие — кандидаты вдоль берега. "
+        "Зелёные большие — выбранные оптимизатором. Красные ячейки — зоны вне норматива."
+    )
+else:
+    st.caption(
+        "Чёрные точки — действующие станции. Серые мелкие — кандидаты вдоль берега. "
+        "Зелёные большие — выбранные оптимизатором (число = порядок добавления). "
+        "Заливка ячеек — экономия времени прибытия после доразмещения (тёмно-розовый = больше)."
+    )
 
 # --- Selected candidates table ---
 st.subheader("Выбранные точки")
@@ -248,7 +330,7 @@ for rank, idx in enumerate(selected, start=1):
         "lon": f"{candidates.lon[idx]:.5f}",
         "Скорость, км/ч": f"{candidates.speed_kmh[idx]:.0f}",
     })
-st.dataframe(rows, hide_index=True, use_container_width=True)
+st.dataframe(rows, hide_index=True, width="stretch")
 
 # --- Objective history ---
 st.subheader("Динамика функционала")

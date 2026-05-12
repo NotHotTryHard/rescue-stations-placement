@@ -6,16 +6,37 @@ import numpy as np
 
 from src.data import load_stations_raw, load_passages
 from src.config import get_config_value, MAPBOX_TOKEN
-from src.session import sidebar_controls, get_results
+from src.session import sidebar_controls, sidebar_section, get_results
 from src.coverage import blind_spots
 
 st.set_page_config(page_title="Достижимость", layout="wide")
 st.title("Карта достижимости")
 
-cell_size = sidebar_controls()
-max_time_display = st.sidebar.slider("Макс. время на шкале (мин)", 5, 60, 25, 5)
-show_blind_spots = st.sidebar.checkbox("Показывать слепые пятна", value=False)
-blind_threshold = st.sidebar.slider("Порог слепых пятен (мин)", 5, 40, 20, 1)
+with sidebar_section("Сетка и данные"):
+    cell_size = sidebar_controls(st)
+
+with sidebar_section("Выживаемость и нормативы"):
+    max_time_display = st.slider(
+        "Макс. время на шкале (мин)",
+        5,
+        60,
+        25,
+        5,
+        key="max_time_display_min",
+    )
+    show_blind_spots = st.checkbox(
+        "Показывать слепые пятна",
+        value=False,
+        key="show_blind_spots",
+    )
+    blind_threshold = st.slider(
+        "Норматив для покрытия (мин)",
+        5,
+        40,
+        15,
+        1,
+        key="coverage_threshold_min",
+    )
 
 lats, lons, _, min_times, _ = get_results()
 
