@@ -9,7 +9,6 @@ from src.data import (
     classify_cells_by_zone,
     get_passage_coords,
     load_risk_scenarios,
-    load_stations_raw,
     load_water_polygon,
 )
 from src.graph import build_graph
@@ -27,6 +26,9 @@ from src.optimization import (
     weighted_coverage,
 )
 from src.session import (
+    active_stations_signature,
+    add_session_station,
+    get_active_stations_raw,
     get_results,
     get_risk_distribution,
     risk_scenario_control,
@@ -70,7 +72,7 @@ def _build_candidates(cell_size_m: int, shore_step_m: float, speed_kmh: float,
 
 
 @st.cache_resource(show_spinner=False)
-def _build_existing(cell_size_m: int, neighbor_offsets_sig: tuple):
+def _build_existing(cell_size_m: int, neighbor_offsets_sig: tuple, stations_sig: tuple):
     lats, lons, _, _, stations = get_results()
     graph = _build_graph_for(cell_size_m, neighbor_offsets_sig)
     return from_stations(stations, graph=graph, grid_lats=lats, grid_lons=lons)
@@ -163,9 +165,10 @@ with sidebar_section("Алгоритм"):
 lats, lons, _, _, _ = get_results()
 dist = get_risk_distribution()
 neighbor_sig = tuple(get_neighbor_offsets())
+stations_sig = active_stations_signature()
 
 with st.spinner("Подготовка существующих станций и кандидатов..."):
-    existing = _build_existing(cell_size, neighbor_sig)
+    existing = _build_existing(cell_size, neighbor_sig, stations_sig)
     candidates = _build_candidates(
         cell_size, float(shore_step), float(candidate_speed),
         neighbor_sig, tuple(int(i) for i in existing.grid_index),
@@ -226,7 +229,7 @@ candidate_data = [
     if i not in set(int(s) for s in selected)
 ]
 
-stations_raw = load_stations_raw()
+stations_raw = get_active_stations_raw()
 station_charset = '"' + "".join(sorted({ch for s in stations_raw for ch in s["name"]})) + '"'
 
 # Field layer: either remaining blind spots or time saved per cell.
@@ -321,16 +324,70 @@ else:
 
 # --- Selected candidates table ---
 st.subheader("Выбранные точки")
-rows = []
+active_station_ids = {
+    row.get("id", row["name"])
+    for row in get_active_stations_raw()
+}
+selected_rows = []
 for rank, idx in enumerate(selected, start=1):
-    rows.append({
-        "Порядок": rank,
-        "Метка": candidates.labels[idx],
-        "lat": f"{candidates.lat[idx]:.5f}",
-        "lon": f"{candidates.lon[idx]:.5f}",
-        "Скорость, км/ч": f"{candidates.speed_kmh[idx]:.0f}",
-    })
-st.dataframe(rows, hide_index=True, width="stretch")
+    label = str(candidates.labels[idx])
+    selected_rows.append(
+        {
+            "rank": rank,
+            "label": label,
+            "station_id": f"opt_{label}",
+            "station_name": f"Опт-{label.split('_')[-1]}",
+            "lat": float(candidates.lat[idx]),
+            "lon": float(candidates.lon[idx]),
+            "speed_kmh": float(candidates.speed_kmh[idx]),
+        }
+    )
+
+pending_rows = [
+    row for row in selected_rows
+    if row["station_id"] not in active_station_ids
+]
+if pending_rows and st.button("Добавить все выбранные станции"):
+    for row in pending_rows:
+        add_session_station(
+            row["station_name"],
+            row["lat"],
+            row["lon"],
+            row["speed_kmh"],
+            row["station_id"],
+        )
+    _build_existing.clear()
+    _build_candidates.clear()
+    st.rerun()
+
+header = st.columns([0.7, 1.4, 1.2, 1.2, 1.2, 1.5])
+header[0].markdown("**Порядок**")
+header[1].markdown("**Метка**")
+header[2].markdown("**lat**")
+header[3].markdown("**lon**")
+header[4].markdown("**Скорость**")
+header[5].markdown("**Действие**")
+
+for station in selected_rows:
+    row = st.columns([0.7, 1.4, 1.2, 1.2, 1.2, 1.5])
+    row[0].write(station["rank"])
+    row[1].write(station["label"])
+    row[2].write(f"{station['lat']:.5f}")
+    row[3].write(f"{station['lon']:.5f}")
+    row[4].write(f"{station['speed_kmh']:.0f} км/ч")
+    if station["station_id"] in active_station_ids:
+        row[5].button("Добавлена", key=f"added_{station['station_id']}", disabled=True)
+    elif row[5].button("Добавить станцию", key=f"add_{station['station_id']}"):
+        add_session_station(
+            station["station_name"],
+            station["lat"],
+            station["lon"],
+            station["speed_kmh"],
+            station["station_id"],
+        )
+        _build_existing.clear()
+        _build_candidates.clear()
+        st.rerun()
 
 # --- Objective history ---
 st.subheader("Динамика функционала")

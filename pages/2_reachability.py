@@ -4,9 +4,9 @@ import streamlit as st
 import pydeck as pdk
 import numpy as np
 
-from src.data import load_stations_raw, load_passages
+from src.data import load_passages
 from src.config import get_config_value, MAPBOX_TOKEN
-from src.session import sidebar_controls, sidebar_section, get_results
+from src.session import get_active_stations_raw, sidebar_controls, sidebar_section, get_results
 from src.coverage import blind_spots
 
 st.set_page_config(page_title="Достижимость", layout="wide")
@@ -73,7 +73,7 @@ grid_data = [
 spots = blind_spots(min_times, threshold_min=blind_threshold)
 spot_data = [{"lat": float(lats[i]), "lon": float(lons[i]), "color": [255, 0, 0, 200]} for i in spots]
 
-stations_raw = load_stations_raw()
+stations_raw = get_active_stations_raw()
 station_charset = '"' + "".join(sorted({ch for s in stations_raw for ch in s["name"]})) + '"'
 passages = load_passages()
 passages_data = [{"name": v["name"], "lat": v["lat"], "lon": v["lon"]} for v in passages.values()]

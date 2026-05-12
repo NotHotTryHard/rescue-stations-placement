@@ -4,7 +4,8 @@ import numpy as np
 import streamlit as st
 
 from .data import (
-    load_water_polygon, load_stations, classify_cells_by_zone, get_passage_coords,
+    Station,
+    load_water_polygon, load_stations, load_stations_raw, classify_cells_by_zone, get_passage_coords,
     load_risk_scenarios, load_shoreline,
 )
 from .config import ensure_config, get_neighbor_offsets, get_config_value
@@ -27,7 +28,7 @@ def _compute(cell_size_m: int, neighbor_offsets: list[tuple[int, int]], neighbor
         passage_radius_m=1000.0,
     )
 
-    stations = load_stations()
+    stations = get_active_stations()
     sources = [snap_to_grid(s.lat, s.lon, lats, lons) for s in stations]
     speeds = [s.speed_kmh for s in stations]
     travel_times = compute_travel_times(graph, sources, speeds)
@@ -64,6 +65,49 @@ def sidebar_controls(container=None):
     return val
 
 
+def get_added_stations_raw() -> list[dict]:
+    """Stations added from optimization during the current Streamlit session."""
+    st.session_state.setdefault("added_stations", [])
+    return st.session_state["added_stations"]
+
+
+def get_active_stations() -> list[Station]:
+    """Base stations plus stations added in the current session."""
+    return load_stations() + [Station(**row) for row in get_added_stations_raw()]
+
+
+def get_active_stations_raw() -> list[dict]:
+    """Raw station dicts for pydeck layers, including session additions."""
+    return load_stations_raw() + [row.copy() for row in get_added_stations_raw()]
+
+
+def active_stations_signature() -> tuple:
+    """Hashable signature for station-dependent caches."""
+    return tuple(
+        (s.id, round(float(s.lat), 7), round(float(s.lon), 7), float(s.speed_kmh))
+        for s in get_active_stations()
+    )
+
+
+def add_session_station(name: str, lat: float, lon: float, speed_kmh: float, station_id: str) -> bool:
+    """Add one station to the current session. Returns False if it already exists."""
+    ids = {s.id for s in get_active_stations()}
+    if station_id in ids:
+        return False
+
+    get_added_stations_raw().append(
+        {
+            "id": station_id,
+            "name": name,
+            "lat": float(lat),
+            "lon": float(lon),
+            "speed_kmh": float(speed_kmh),
+        }
+    )
+    st.session_state.pop("results", None)
+    return True
+
+
 def risk_scenario_control(cfg: dict, scenarios: dict, label: str = "Сценарий", container=None):
     """Shared risk scenario selector. Stores the selected key in cfg."""
     if container is None:
@@ -87,6 +131,7 @@ def get_results():
     neighbor_level = int(get_config_value("neighbor_level"))
     neighbor_offsets = get_neighbor_offsets()
     neighbor_offsets_sig = tuple(neighbor_offsets)
+    stations_sig = active_stations_signature()
     cached = st.session_state.get("results")
 
     if (
@@ -94,9 +139,11 @@ def get_results():
         or cached["cell_size"] != cell_size
         or cached.get("neighbor_level") != neighbor_level
         or cached.get("neighbor_offsets") != neighbor_offsets_sig
+        or cached.get("stations_signature") != stations_sig
     ):
         with st.spinner("Расчёт сетки и маршрутов..."):
             st.session_state["results"] = _compute(cell_size, neighbor_offsets, neighbor_level)
+            st.session_state["results"]["stations_signature"] = stations_sig
 
     r = st.session_state["results"]
     return r["lats"], r["lons"], r["travel_times"], r["min_times"], r["stations"]

@@ -6,11 +6,12 @@ import streamlit as st
 
 from src.config import MAPBOX_TOKEN, ensure_config, get_config_value
 from src.coverage import weighted_coverage_at_thresholds
-from src.data import load_risk_scenarios, load_stations_raw
+from src.data import load_risk_scenarios
 from src.grid import METERS_PER_DEG_LAT, METERS_PER_DEG_LON
 from src.session import (
     get_results,
     get_risk_distribution,
+    get_active_stations_raw,
     risk_scenario_control,
     sidebar_controls,
     sidebar_section,
@@ -230,7 +231,7 @@ if show_samples:
         )
     )
 
-stations_raw = load_stations_raw()
+stations_raw = get_active_stations_raw()
 station_charset = (
     '"' + "".join(sorted({ch for s in stations_raw for ch in s["name"]})) + '"'
 )

@@ -9,10 +9,10 @@ from src.data import (
     load_kronshtadt_outline,
     load_passages,
     load_shoreline,
-    load_stations_raw,
     load_zones_geojson,
 )
 from src.config import get_config_value, MAPBOX_TOKEN
+from src.session import get_active_stations_raw
 
 st.set_page_config(page_title="Карта", layout="wide")
 st.title("Карта акватории")
@@ -22,13 +22,13 @@ st.title("Карта акватории")
 def get_data():
     zones = load_zones_geojson()
     passages = load_passages()
-    stations = load_stations_raw()
     mainland_geom = mapping(load_shoreline())
     kron_geom = mapping(load_kronshtadt_outline())
-    return zones, passages, stations, mainland_geom, kron_geom
+    return zones, passages, mainland_geom, kron_geom
 
 
-zones, passages, stations, mainland_geom, kron_geom = get_data()
+zones, passages, mainland_geom, kron_geom = get_data()
+stations = get_active_stations_raw()
 station_charset = '"' + "".join(sorted({ch for s in stations for ch in s["name"]})) + '"'
 
 zones_colored = {

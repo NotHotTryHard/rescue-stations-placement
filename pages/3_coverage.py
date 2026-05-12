@@ -3,9 +3,8 @@
 import streamlit as st
 import pydeck as pdk
 
-from src.data import load_stations_raw
 from src.config import get_config_value, MAPBOX_TOKEN
-from src.session import sidebar_controls, sidebar_section, get_results
+from src.session import get_active_stations_raw, sidebar_controls, sidebar_section, get_results
 from src.coverage import coverage_at_thresholds, station_zones
 
 st.set_page_config(page_title="Зоны ответственности", layout="wide")
@@ -15,7 +14,7 @@ with sidebar_section("Сетка и данные"):
     cell_size = sidebar_controls(st)
 
 lats, lons, travel, min_times, stations = get_results()
-stations_raw = load_stations_raw()
+stations_raw = get_active_stations_raw()
 station_charset = '"' + "".join(sorted({ch for s in stations_raw for ch in s["name"]})) + '"'
 view = pdk.ViewState(latitude=60.00, longitude=29.85, zoom=10, pitch=0)
 map_style = get_config_value("map_style")
