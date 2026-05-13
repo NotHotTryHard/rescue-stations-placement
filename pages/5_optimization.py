@@ -1,5 +1,7 @@
 """Доразмещение станций: жадный + локальный поиск над кандидатами с берега."""
 
+import time
+
 import numpy as np
 import pydeck as pdk
 import streamlit as st
@@ -108,7 +110,7 @@ t_cap = 120
 coverage_T = 15
 survival_median = 10
 survival_model = "increasing"
-survival_max_time = 30
+survival_max_time = 25
 show_blind_spots = False
 with sidebar_section("Выживаемость в воде"):
     survival_model = st.radio(
@@ -131,8 +133,8 @@ with sidebar_section("Выживаемость в воде"):
     if survival_model == "increasing":
         min_max_time = int(survival_median) + 1
         if "survival_max_time_min" not in st.session_state:
-            st.session_state["survival_max_time_min"] = 30
-        if st.session_state.get("survival_max_time_min", 30) < min_max_time:
+            st.session_state["survival_max_time_min"] = 25
+        if st.session_state.get("survival_max_time_min", 25) < min_max_time:
             st.session_state["survival_max_time_min"] = min_max_time
         survival_max_time = st.slider(
             "Макс. значение выживаемости (мин)",
@@ -158,6 +160,7 @@ with sidebar_section("Алгоритм"):
     algorithm_choice = st.radio(
         "Алгоритм",
         ("greedy", "greedy_then_swap"),
+        index=1,
         format_func={"greedy": "Жадный", "greedy_then_swap": "Жадный + 1-swap"}.get,
     )
 
@@ -166,13 +169,16 @@ lats, lons, _, _, _ = get_results()
 dist = get_risk_distribution()
 neighbor_sig = tuple(get_neighbor_offsets())
 stations_sig = active_stations_signature()
+total_t0 = time.perf_counter()
 
 with st.spinner("Подготовка существующих станций и кандидатов..."):
+    prep_t0 = time.perf_counter()
     existing = _build_existing(cell_size, neighbor_sig, stations_sig)
     candidates = _build_candidates(
         cell_size, float(shore_step), float(candidate_speed),
         neighbor_sig, tuple(int(i) for i in existing.grid_index),
     )
+    prep_elapsed = time.perf_counter() - prep_t0
 
 if objective_choice == "mean_time":
     objective = mean_response_time(dist.weights, t_cap_min=float(t_cap))
@@ -198,15 +204,19 @@ with st.spinner(f"Оптимизация ({algorithm_choice})..."):
         solution = greedy(problem)
     else:
         solution = greedy_then_swap(problem)
+total_elapsed = time.perf_counter() - total_t0
+algorithm_elapsed = float(solution.meta.get("elapsed_sec", 0.0))
 
 # --- Metrics ---
 F0 = problem.base_value
 F1 = solution.objective_value
-col1, col2, col3, col4 = st.columns(4)
+col1, col2, col3, col4, col5, col6 = st.columns(6)
 col1.metric("Кандидатов", f"{candidates.K}")
 col2.metric("F (база)", fmt(F0))
 col3.metric("F (после opt)", fmt(F1), delta=fmt(F1 - F0), delta_color="inverse")
-col4.metric("Время оптимизации", f"{solution.meta.get('elapsed_sec', 0):.3f} с")
+col4.metric("Время оптимизации", f"{total_elapsed:.3f} с")
+col5.metric("Подготовка", f"{prep_elapsed:.3f} с")
+col6.metric("Алгоритм", f"{algorithm_elapsed:.3f} с")
 
 # --- Map ---
 view = pdk.ViewState(latitude=60.00, longitude=29.85, zoom=10, pitch=0)
