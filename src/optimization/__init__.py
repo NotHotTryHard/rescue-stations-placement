@@ -6,10 +6,10 @@ Public API:
 - PlacementSet + builders (from_stations, attach_travel_times)
 - sample_shore_candidates
 - Problem
-- Solution + algorithms (greedy, local_swap, greedy_then_swap)
+- Solution + algorithms (greedy, local_swap, local_k_swap, greedy_then_swap, greedy_then_k_swap)
 """
 
-from .algorithms import Solution, greedy, greedy_then_swap, local_swap
+from .algorithms import Solution, greedy, greedy_then_k_swap, greedy_then_swap, local_k_swap, local_swap
 from .candidates import (
     sample_kronshtadt_candidates,
     sample_kronshtadt_points,
@@ -47,5 +47,7 @@ __all__ = [
     "Solution",
     "greedy",
     "local_swap",
+    "local_k_swap",
     "greedy_then_swap",
+    "greedy_then_k_swap",
 ]

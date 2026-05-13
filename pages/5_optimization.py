@@ -20,6 +20,7 @@ from src.optimization import (
     expected_failure,
     from_stations,
     greedy,
+    greedy_then_k_swap,
     greedy_then_swap,
     mean_response_time,
     sample_shore_candidates,
@@ -159,9 +160,14 @@ with sidebar_section("Выживаемость в воде"):
 with sidebar_section("Алгоритм"):
     algorithm_choice = st.radio(
         "Алгоритм",
-        ("greedy", "greedy_then_swap"),
+        ("greedy", "greedy_then_swap", "greedy_then_2swap", "greedy_then_3swap"),
         index=1,
-        format_func={"greedy": "Жадный", "greedy_then_swap": "Жадный + 1-swap"}.get,
+        format_func={
+            "greedy": "Жадный",
+            "greedy_then_swap": "Жадный + 1-swap",
+            "greedy_then_2swap": "Жадный + 2-swap",
+            "greedy_then_3swap": "Жадный + 3-swap",
+        }.get,
     )
 
 # --- Compute ---
@@ -202,8 +208,12 @@ problem = Problem(existing=existing, candidates=candidates, objective=objective,
 with st.spinner(f"Оптимизация ({algorithm_choice})..."):
     if algorithm_choice == "greedy":
         solution = greedy(problem)
-    else:
+    elif algorithm_choice == "greedy_then_swap":
         solution = greedy_then_swap(problem)
+    elif algorithm_choice == "greedy_then_2swap":
+        solution = greedy_then_k_swap(problem, swap_size=2)
+    else:
+        solution = greedy_then_k_swap(problem, swap_size=3)
 total_elapsed = time.perf_counter() - total_t0
 algorithm_elapsed = float(solution.meta.get("elapsed_sec", 0.0))
 
