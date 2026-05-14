@@ -19,7 +19,11 @@ from src.session import (
 
 
 def _log_scale_factor(scenario: str) -> float:
-    return 2999.0 if scenario == "winter" else 9.0
+    return {
+        "summer": 499.0,
+        "annual": 1999.0,
+        "winter": 2999.0,
+    }.get(scenario, 4.0)
 
 
 def _default_hex_elevation_scale(scenario: str) -> int:

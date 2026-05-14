@@ -175,7 +175,6 @@ lats, lons, _, _, _ = get_results()
 dist = get_risk_distribution()
 neighbor_sig = tuple(get_neighbor_offsets())
 stations_sig = active_stations_signature()
-total_t0 = time.perf_counter()
 
 with st.spinner("Подготовка существующих станций и кандидатов..."):
     prep_t0 = time.perf_counter()
@@ -186,22 +185,20 @@ with st.spinner("Подготовка существующих станций и
     )
     prep_elapsed = time.perf_counter() - prep_t0
 
+if survival_model == "exponential":
+    survival = survival_exponential(float(survival_median))
+else:
+    survival = survival_increasing_intensity(
+        float(survival_median),
+        float(survival_max_time),
+    )
+
 if objective_choice == "mean_time":
     objective = mean_response_time(dist.weights, t_cap_min=float(t_cap))
-    fmt = lambda v: f"{v:+.3f} мин"
 elif objective_choice == "coverage":
     objective = weighted_coverage(dist.weights, threshold_min=float(coverage_T))
-    fmt = lambda v: f"{-v * 100:+.2f}%"  # show as positive coverage %
 else:
-    if survival_model == "exponential":
-        survival = survival_exponential(float(survival_median))
-    else:
-        survival = survival_increasing_intensity(
-            float(survival_median),
-            float(survival_max_time),
-        )
     objective = expected_failure(dist.weights, survival)
-    fmt = lambda v: f"{v * 100:+.2f}%"
 
 problem = Problem(existing=existing, candidates=candidates, objective=objective, m=m)
 
@@ -214,17 +211,27 @@ with st.spinner(f"Оптимизация ({algorithm_choice})..."):
         solution = greedy_then_k_swap(problem, swap_size=2)
     else:
         solution = greedy_then_k_swap(problem, swap_size=3)
-total_elapsed = time.perf_counter() - total_t0
 algorithm_elapsed = float(solution.meta.get("elapsed_sec", 0.0))
 
 # --- Metrics ---
-F0 = problem.base_value
-F1 = solution.objective_value
+base_mean_time = dist.expected_time(problem.base_field, finite_only=True)
+opt_mean_time = dist.expected_time(solution.final_field, finite_only=True)
+base_survival = dist.expected_survival(problem.base_field, survival) * 100
+opt_survival = dist.expected_survival(solution.final_field, survival) * 100
 col1, col2, col3, col4, col5, col6 = st.columns(6)
-col1.metric("Кандидатов", f"{candidates.K}")
-col2.metric("F (база)", fmt(F0))
-col3.metric("F (после opt)", fmt(F1), delta=fmt(F1 - F0), delta_color="inverse")
-col4.metric("Время оптимизации", f"{total_elapsed:.3f} с")
+col1.metric("Среднее время (база)", f"{base_mean_time:.2f} мин")
+col2.metric(
+    "Среднее время (после opt)",
+    f"{opt_mean_time:.2f} мин",
+    delta=f"{opt_mean_time - base_mean_time:+.2f} мин",
+    delta_color="inverse",
+)
+col3.metric("Средняя выживаемость (база)", f"{base_survival:.1f}%")
+col4.metric(
+    "Средняя выживаемость (после opt)",
+    f"{opt_survival:.1f}%",
+    delta=f"{opt_survival - base_survival:+.1f}%",
+)
 col5.metric("Подготовка", f"{prep_elapsed:.3f} с")
 col6.metric("Алгоритм", f"{algorithm_elapsed:.3f} с")
 
